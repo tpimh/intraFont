@@ -1,0 +1,59 @@
+intraFont - A bitmap font library for PSP using the PSP's internal font (firmware pgf files)
+
+intraFont Version 0.1 - Written 2007 by BenHur
+
+intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
+
+-=Info=-
+
+The library loads a pgf font from firmware and generates a 4-bit paletted bitmap font texture on
+the fly when drawing text. It caches previously drawn characters and is accurate to 1/4 pixel.
+
+As of version 0.1 intraFont supports regular, italic, and or bold latin and Japanese fonts:
+flash0:/font/ltn0.pgf, ltn1.pgf, ..., ltn15.pgf, jpn0.pgf
+
+Planned features for the next version:
+- add support for arib.pgf and kr0.pgf (Korean)
+- improve INTRAFONT_FIXEDWIDTH (looks crapy)
+- implement intraFontMeasureText(), INTRAFONT_VERTADVANCE, INTRAFONT_RIGHTALIGN and INTRAFONT_CENTER
+- maybe increase accuracy to 1/64 pixel (at the cost of memory)
+- speed & memory optimizations, bug fixes (glyph caching was not extensively tested), cleanup, ...
+
+-=Samples=-
+
+There are two samples included, one for raw GU and the other using the graphics library from
+Yeldarb's tutorials on psp-programming.com
+
+If you're using the graphics library then you may need to reset the sceGuTex* states to what
+they are defaulted to in the initGraphics() functions, after using the intraFont* functions.
+
+It should be easy enough to add to any other library.
+
+-=Dependencies=-
+
+none (i.e. freetype is NOT required)
+
+-=Credits=-
+
+Skylark and Freeplay: basic deciphering of the pgf format
+InsertWittyName: pgeFont
+CpuWhiz: "Hello World" in Japanese
+
+-=License=-
+
+This is released under the Creative Commons Attribution-Share Alike 3.0 License.
+See LICENSE for more information.
+
+-=Atttribution=-
+
+With accordance to the license, the following must be adhered to:
+
+If you use the code in any way, shape or form you must attribute it in the following way:
+
+'Uses intraFont by BenHur'
+
+If you alter the code in any way, shape or form you must also release the updated code
+under the same license.
+
+See http://creativecommons.org/licenses/by-sa/3.0/ if you need more information.
+ 
