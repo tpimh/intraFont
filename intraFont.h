@@ -1,7 +1,7 @@
 /*
  * intraFont.h
  * This file is used to display the PSP's internal font (pgf firmware files)
- * Version 0.1 - Written in 2007 by BenHur
+ * intraFont Version 0.2 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -21,23 +21,33 @@ extern "C" {
  *  @{
  */
 
-#define INTRAFONT_HORADVANCE  0x00 //default: advance horizontaly from one char to the next
-#define INTRAFONT_VERTADVANCE 0x01
-#define INTRAFONT_LEFTALIGN   0x00 //default: left-align the text
-#define INTRAFONT_CENTER      0x02
-#define INTRAFONT_RIGHTALIGN  0x04
-#define INTRAFONT_VARWIDTH    0x00 //default: variable-width
-#define INTRAFONT_FIXEDWIDTH  0x08 
+#define INTRAFONT_ADVANCE_H     0x0000 //default: advance horizontaly from one char to the next
+#define INTRAFONT_ADVANCE_V     0x0100
+#define INTRAFONT_ALIGN_LEFT    0x0000 //default: left-align the text
+#define INTRAFONT_ALIGN_CENTER  0x0200
+#define INTRAFONT_ALIGN_RIGHT   0x0400
+#define INTRAFONT_WIDTH_VAR     0x0000 //default: variable-width
+#define INTRAFONT_WIDTH_FIX     0x0800 //set your custom fixed witdh to 24 pixels: INTRAFONT_WIDTH_FIX | 24 
+                                       //(max is 255, set to 0 to use default fixed width, this width will be scaled by size)
+#define INTRAFONT_ACTIVE        0x1000 //assumes the font-texture resides inside sceGuTex already, prevents unecessary reloading -> very small speed-gain
+#define INTRAFONT_CACHE_SMALL   0x2000 //128x128 texture ( enough to cache only about 25 chars, not recommended)
+#define INTRAFONT_CACHE_MED     0x0000 //default: 256x256 texture (enough to cache about 100 chars)
+#define INTRAFONT_CACHE_LARGE   0x4000 //512x512 texture(enough to cache all chars of ltn0.pgf or ... or ltn15.pgf or kr0.pgf)
+#define INTRAFONT_CACHE_ALL     0x6000 //try to cache all chars during fontload (uses less memory and is faster to draw text, but slower to load font)
+                                       //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a large texture
+									   //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
 
 /** @note The following definitions are used internally by ::intraFont and have no other relevance.*/
 #define PGF_BMP_H_ROWS    0x01
 #define PGF_BMP_V_ROWS    0x02
+#define PGF_BMP_OVERLAY   0x03
 #define PGF_NO_EXTRA1     0x04
 #define PGF_NO_EXTRA2     0x08
 #define PGF_NO_EXTRA3     0x10
 #define PGF_CHARGLYPH     0x20
 #define PGF_SHADOWGLYPH   0x40 //warning: this flag is not contained in the metric header flags and is only provided for simpler call to intraFontGetGlyph - ONLY check with (flags & PGF_CHARGLYPH)
 #define PGF_CACHED        0x80
+#define PGF_WIDTH_MASK    0xFF
 
 
 /**
@@ -144,11 +154,11 @@ void intraFontShutdown(void);
  *
  * @param filename - Path to the font
  *
- * @param flags - PGF_NOCACHE or 0
+ * @param  options - INTRAFONT_XXX flags as defined above including flags related to CACHE (ored together)
  *
  * @returns A ::intraFont struct
  */
-intraFont* intraFontLoad(const char *filename);
+intraFont* intraFontLoad(const char *filename,unsigned short options);
 
 /**
  * Free the specified font.
@@ -175,7 +185,7 @@ void intraFontActivate(intraFont *font);
  *
  * @param shadowColor - Shadow color (use 0 for no shadow)
  *
- * @param options - INTRAFONT_XXX flags as defined above (ored together)
+ * @param options - INTRAFONT_XXX flags as defined above except flags related to CACHE (ored together)
  */
 void intraFontSetStyle(intraFont *font, float size, unsigned int color, unsigned int shadowColor, unsigned short options);
 
@@ -192,11 +202,11 @@ void intraFontSetStyle(intraFont *font, float size, unsigned int color, unsigned
  *
  * @param shadowColor - Shadow color (use 0 for no shadow)
  *
- * @param text - Text to draw
+ * @param text - UCS-2 encoded text to draw
  *
- * @returns The total width of the text drawn.
+ * @returns The x position after the last char
  */
-int intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short *text);
+float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short *text);
 
 /**
  * Draw text along the baseline starting at x, y.
@@ -207,11 +217,11 @@ int intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short *
  *
  * @param y - Y position on screen
  *
- * @param text - Text to draw
+ * @param text - (ASCII) Text to draw
  *
- * @returns The total width of the text drawn.
+ * @returns The x position after the last char
  */
-int intraFontPrint(intraFont *font, float x, float y, const char *text);
+float intraFontPrint(intraFont *font, float x, float y, const char *text);
 
 /**
  * Draw text along the baseline starting at x, y (with formatting).
@@ -222,22 +232,33 @@ int intraFontPrint(intraFont *font, float x, float y, const char *text);
  *
  * @param y - Y position on screen
  *
- * @param text - Text to draw
+ * @param text - (ASCII) Text to draw
  *
- * @returns The total width of the text drawn.
+ * @returns The x position after the last char
  */
-int intraFontPrintf(intraFont *font, float x, float y, const char *text, ...);
+float intraFontPrintf(intraFont *font, float x, float y, const char *text, ...);
 
 /**
  * Measure a length of text if it were to be drawn
  *
  * @param font - A valid ::intraFont
  *
- * @param text - Text to measure
+ * @param text - (ASCII) Text to measure
  *
- * @returns The total width of the text.
+ * @returns The total width of the text (until the first newline char)
  */
-int intraFontMeasureText(intraFont *font, const char *text);
+float intraFontMeasureText(intraFont *font, const char *text);
+
+/**
+ * Measure a length of UCS-2 encoded text if it were to be drawn
+ *
+ * @param font - A valid ::intraFont
+ *
+ * @param text - UCS-2 encoded text to measure
+ *
+ * @returns The total width of the text (until the first newline char)
+ */
+float intraFontMeasureTextUCS2(intraFont *font, const unsigned short *text); 
 
 /** @} */
 

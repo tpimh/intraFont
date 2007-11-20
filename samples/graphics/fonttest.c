@@ -1,3 +1,15 @@
+/*
+ * fonttest.c
+ * This file is used to display the PSP's internal font (pgf firmware files)
+ * intraFont Version 0.2 by BenHur - http://www.psp-programming.com/benhur
+ *
+ * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
+ *
+ * This work is licensed under the Creative Commons Attribution-Share Alike 3.0 License.
+ * See LICENSE for more details.
+ *
+ */
+
 #include <pspkernel.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,6 +17,8 @@
 #include <pspgu.h>
 #include <pspgum.h>
 #include <pspdisplay.h>
+#include <time.h>     //only needed for the blinking effect
+#include <pspdebug.h> //only needed for indicating loading progress
 
 #include "graphics.h"
 
@@ -14,41 +28,59 @@ PSP_MODULE_INFO("FontTest", PSP_MODULE_USER, 1, 1);
 
 static int running = 1;
 
-int exit_callback(int arg1, int arg2, void *common)
-{
+int exit_callback(int arg1, int arg2, void *common) {
 	running = 0;
 	return 0;
 }
 
-int CallbackThread(SceSize args, void *argp)
-{
-	int cbid;
-
-	cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+int CallbackThread(SceSize args, void *argp) {
+	int cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
 	sceKernelRegisterExitCallback(cbid);
-
 	sceKernelSleepThreadCB();
-
 	return 0;
 }
 
-int SetupCallbacks(void)
-{
-	int thid = 0;
-
-	thid = sceKernelCreateThread("CallbackThread", CallbackThread, 0x11, 0xFA0, PSP_THREAD_ATTR_USER, 0);
-
-	if(thid >= 0)
-	{
-		sceKernelStartThread(thid, 0, 0);
-	}
-
+int SetupCallbacks(void) {
+	int thid = sceKernelCreateThread("CallbackThread", CallbackThread, 0x11, 0xFA0, PSP_THREAD_ATTR_USER, 0);
+	if (thid >= 0) sceKernelStartThread(thid, 0, 0);
 	return thid;
 }
 
-int main()
-{
+int main() {
+	pspDebugScreenInit();
 	SetupCallbacks();
+    
+    pspDebugScreenPrintf("intraFont 0.2 - 2007 by BenHur\n\nLoading fonts: 0%%");
+        
+    // Init intraFont library
+    intraFontInit();
+    
+     // Load fonts
+    intraFont* ltn[16];                                         //latin fonts (large/small, with/without serif, regular/italic/bold/italic&bold)
+    char file[40];
+    int i;
+    for (i = 0; i < 16; i++) {
+        sprintf(file, "flash0:/font/ltn%d.pgf", i); 
+        ltn[i] = intraFontLoad(file,0);                         //<- this is where the actual loading happens
+		pspDebugScreenSetXY(15,2);
+        pspDebugScreenPrintf("%d%%",(i+1)*100/19);
+    }
+    
+    intraFont* jpn0 = intraFontLoad("flash0:/font/jpn0.pgf",0); //japanese font (and parts of latin)
+    pspDebugScreenSetXY(15,2);
+    pspDebugScreenPrintf("%d%%",17*100/19);
+        
+	intraFont* kr0 = intraFontLoad("flash0:/font/kr0.pgf",0);   //Korean font (not available on all systems)
+	pspDebugScreenSetXY(15,2);
+    pspDebugScreenPrintf("%d%%",18*100/19);
+           
+	intraFont* arib = intraFontLoad("flash0:/font/arib.pgf",0); //Symbols (not available on all systems)
+	pspDebugScreenSetXY(15,2);
+    pspDebugScreenPrintf("done\n");
+
+	// Make sure the important fonts for this application are loaded
+	if(!ltn[0] || !ltn[4] || !ltn[8]) sceKernelExitGame();
+	
 	
 	initGraphics();
 
@@ -58,36 +90,11 @@ int main()
 		GREEN =	0xFF00FF00,
 		BLUE =	0xFFFF0000,
 		WHITE =	0xFFFFFFFF,
+		LITEGRAY = 0xFFBFBFBF,
 		GRAY =  0xFF7F7F7F,
-		DARKGRAY = 0xFF3F3F3F,
+		DARKGRAY = 0xFF3F3F3F,		
 		BLACK = 0xFF000000
 	};
-
-	intraFontInit();
-
-	// Load fonts
-	intraFont* ltn0 = intraFontLoad("flash0:/font/ltn0.pgf"); //latin sans-serif regular
-    intraFont* ltn1 = intraFontLoad("flash0:/font/ltn1.pgf"); //latin with serif regular
-    intraFont* ltn2 = intraFontLoad("flash0:/font/ltn2.pgf"); //latin sans-serif italic
-    intraFont* ltn3 = intraFontLoad("flash0:/font/ltn3.pgf"); //latin with serif italic
-    intraFont* ltn4 = intraFontLoad("flash0:/font/ltn4.pgf"); //latin sans-serif bold
-    intraFont* ltn5 = intraFontLoad("flash0:/font/ltn5.pgf"); //latin with serif bold
-    intraFont* ltn6 = intraFontLoad("flash0:/font/ltn6.pgf"); //latin sans-serif italic & bold
-    intraFont* ltn7 = intraFontLoad("flash0:/font/ltn7.pgf"); //latin sans-serif italic & bold
-    intraFont* ltn8 = intraFontLoad("flash0:/font/ltn8.pgf"); //same as above with small font
-    intraFont* ltn9 = intraFontLoad("flash0:/font/ltn9.pgf"); //...
-    intraFont* ltn10 = intraFontLoad("flash0:/font/ltn10.pgf");
-    intraFont* ltn11 = intraFontLoad("flash0:/font/ltn11.pgf");
-    intraFont* ltn12 = intraFontLoad("flash0:/font/ltn12.pgf");
-    intraFont* ltn13 = intraFontLoad("flash0:/font/ltn13.pgf");
-    intraFont* ltn14 = intraFontLoad("flash0:/font/ltn14.pgf");
-    intraFont* ltn15 = intraFontLoad("flash0:/font/ltn15.pgf");
-    intraFont* jpn0 = intraFontLoad("flash0:/font/jpn0.pgf"); //japanese font (and parts of latin)
-
-	// Make sure the fonts are loaded
-	if(!ltn0 || !ltn1 || !ltn2 || !ltn3 || !ltn4 || !ltn5 || !ltn6 || !ltn7 || !ltn8 || 
-       !ltn9 || !ltn10 || !ltn11 || !ltn12 || !ltn13 || !ltn14 || !ltn15 || !jpn0) 
-		sceKernelExitGame();
 
 	while(running)
 	{
@@ -97,74 +104,106 @@ int main()
 		guStart();
 
 		// Draw various text
-        int x,y=25;
-        x = intraFontPrint(ltn0, 10, y, "Latin Sans-Serif: ");
-		x = intraFontPrint(ltn0, x, y, "regular, ");
-        x = intraFontPrint(ltn2, x, y, "italic, ");
-        x = intraFontPrint(ltn4, x, y, "bold, ");
-        x = intraFontPrint(ltn6, x, y, "both");
+        float x,y = 25;
+		intraFontSetStyle(ltn[4], 1.0f,BLACK,WHITE,INTRAFONT_ALIGN_CENTER);
+		intraFontPrint(ltn[4], 240, y, "intraFont 0.2 - 2007 by BenHur");
+        intraFontSetStyle(ltn[4], 1.0f,WHITE,BLACK,0);
+        
+		y += 30;
+		intraFontPrint(ltn[8],  10, y, "Latin Sans-Serif: ");
+		intraFontPrint(ltn[0], 180, y, "regular, ");
+        intraFontPrint(ltn[2], 270, y, "italic, ");
+        intraFontPrint(ltn[4], 330, y, "bold, ");
+        intraFontPrint(ltn[6], 390, y, "both");
+        
+        y += 20;
+        intraFontPrint(ltn[8],  10, y, "Latin Sans-Serif small: ");
+		intraFontPrint(ltn[8], 180, y, "regular, ");
+        intraFontPrint(ltn[10], 270, y, "italic, ");
+        intraFontPrint(ltn[12], 330, y, "bold, ");
+        intraFontPrint(ltn[14], 390, y, "both");
+        
+        y += 20;
+        intraFontPrint(ltn[8],  10, y, "Latin with Serif: ");
+		intraFontPrint(ltn[1], 180, y, "regular, ");
+        intraFontPrint(ltn[3], 270, y, "italic, ");
+        intraFontPrint(ltn[5], 330, y, "bold, ");
+        intraFontPrint(ltn[7], 390, y, "both");
+        
+        y += 20;
+        intraFontPrint(ltn[8],  10, y, "Latin with Serif small: ");
+		intraFontPrint(ltn[9], 180, y, "regular, ");
+        intraFontPrint(ltn[11], 270, y, "italic, ");
+        intraFontPrint(ltn[13], 330, y, "bold, ");
+        intraFontPrint(ltn[15], 390, y, "both");
         
         y += 25;
-        x = intraFontPrint(ltn0, 10, y, "Latin Sans-Serif small: ");
-		x = intraFontPrint(ltn8, x, y, "regular, ");
-        x = intraFontPrint(ltn10, x, y, "italic, ");
-        x = intraFontPrint(ltn12, x, y, "bold, ");
-        x = intraFontPrint(ltn14, x, y, "both");
+        intraFontPrintf(ltn[8], 10, y, "Japanese: ");
+        unsigned short ucs2_jpn[8]    = { 0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0 };
+        x = intraFontPrintUCS2(jpn0, 80, y, ucs2_jpn); 
+		if (x == 80) intraFontPrint(ltn[8], 80, y, "[n/a]");
+        
+        intraFontPrintf(ltn[8], 250, y, "Korean: ");
+		unsigned short ucs2_kr[8]    = { 0xAC00, 0xAC01, 0xAC02, 0xAC03, 0xAC04, 0xAC05, 0xAC06, 0 };
+        x = intraFontPrintUCS2(kr0, 320, y, ucs2_kr); 
+		if (x == 320) intraFontPrint(ltn[8], 320, y, "[n/a]");
+        
+		y += 20;        
+        intraFontPrintf(ltn[8], 10, y, "Symbols: ");
+        unsigned short ucs2_arib[6]    = { 57786, 57787, 57788, 57789, 57790, 0 };
+        x = intraFontPrintUCS2(arib, 80, y, ucs2_arib);
+		if (x == 80) intraFontPrint(ltn[8], 80, y, "[n/a]");
         
         y += 25;
-        x = intraFontPrint(ltn0, 10, y, "Latin with Serif: ");
-		x = intraFontPrint(ltn1, x, y, "regular, ");
-        x = intraFontPrint(ltn3, x, y, "italic, ");
-        x = intraFontPrint(ltn5, x, y, "bold, ");
-        x = intraFontPrint(ltn7, x, y, "both");
+		intraFontPrint(ltn[8], 10, y, "Colors: ");
+        intraFontSetStyle(ltn[8], 1.0f,RED,BLUE,0);
+		x = intraFontPrint(ltn[8], 80, y, "colorful, ");
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,0,0);
+        x = intraFontPrint(ltn[8], x, y, "no shadow, ");
+        intraFontSetStyle(ltn[8], 1.0f,0,BLACK,0);
+        x = intraFontPrint(ltn[8], x, y, "no text, ");
+        intraFontSetStyle(ltn[8], 1.0f,0x7FFFFFFF,BLACK,0);
+        x = intraFontPrint(ltn[8], x, y, "transparent, ");		
+        intraFontSetStyle(ltn[8], 1.0f,GRAY,WHITE,0);
+        x = intraFontPrint(ltn[8], x, y, "glowing, ");
+		float t = ((float)(clock() % CLOCKS_PER_SEC)) / ((float)CLOCKS_PER_SEC);
+		int val = (t < 0.5f) ? t*511 : (1.0f-t)*511;
+		intraFontSetStyle(ltn[8], 1.0f,LITEGRAY,(0xFF<<24)+(val<<16)+(val<<8)+(val),0);
+		x = intraFontPrint(ltn[8], x, y, "flashing");
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
         
-        y += 25;
-        x = intraFontPrint(ltn0, 10, y, "Latin with Serif small: ");
-		x = intraFontPrint(ltn9, x, y, "regular, ");
-        x = intraFontPrint(ltn11, x, y, "italic, ");
-        x = intraFontPrint(ltn13, x, y, "bold, ");
-        x = intraFontPrint(ltn15, x, y, "both");
+        y += 20;
+        intraFontPrint(ltn[8], 10, y, "Spacing: ");
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_WIDTH_FIX);
+		x = intraFontPrint(ltn[8], 80, y, "fixed (default), ");
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_WIDTH_FIX | 12);
+        x = intraFontPrint(ltn[8], x, y, "fixed (12), ");		
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
+        x = intraFontPrint(ltn[8], x, y, "variable width");
         
-        y += 25;
-        x = intraFontPrint(ltn0, 10, y, "Japanese: ");
-        unsigned short ucs2_text[8]    = { 0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0 };
-        intraFontPrintUCS2(jpn0, x, y, ucs2_text);
-        
-        y += 25;
-		x = intraFontPrint(ltn0, 10, y, "Colors: ");
-        intraFontSetStyle(ltn0, 1.0f,RED,BLUE,0);
-		x = intraFontPrint(ltn0, 100, y, "colorful, ");
-        intraFontSetStyle(ltn0, 1.0f,0x7FFFFFFF,BLACK,0);
-        x = intraFontPrint(ltn0, x, y, "semitransparent, ");
-        y += 25;
-        intraFontSetStyle(ltn0, 1.0f,WHITE,0,0);
-        x = intraFontPrint(ltn0, 100, y, "no shadow, ");
-        intraFontSetStyle(ltn0, 1.0f,0,BLACK,0);
-        x = intraFontPrint(ltn0, x, y, "just shadow, ");
-        intraFontSetStyle(ltn0, 1.0f,GRAY,WHITE,0);
-        x = intraFontPrint(ltn0, x, y, "glowing");
-        intraFontSetStyle(ltn0, 1.0f,WHITE,BLACK,0);
-        
-        y += 25;
-        x = intraFontPrint(ltn0, 10, y, "Spacing: ");
-		intraFontSetStyle(ltn0, 1.0f,WHITE,BLACK,INTRAFONT_FIXEDWIDTH);
-		x = intraFontPrint(ltn0, 100, y, "fixed, ");
-        intraFontSetStyle(ltn0, 1.0f,WHITE,BLACK,0);
-        x = intraFontPrint(ltn0, x, y, "variable width");
-        
-        y += 35;
-        x = intraFontPrint(ltn0, 10, y, "Scaling: ");
-		intraFontSetStyle(ltn0, 0.5f,WHITE,BLACK,0);
-		x = intraFontPrint(ltn0, 100, y, "tiny, ");
-        intraFontSetStyle(ltn0, 0.75f,WHITE,BLACK,0);
-		x = intraFontPrint(ltn0, x, y, "small, ");
-        intraFontSetStyle(ltn0, 1.0f,WHITE,BLACK,0);
-		x = intraFontPrint(ltn0, x, y, "regular, ");
-        intraFontSetStyle(ltn0, 1.25f,WHITE,BLACK,0);
-		x = intraFontPrint(ltn0, x, y, "large, ");
-        intraFontSetStyle(ltn0, 1.5f,WHITE,BLACK,0);
-		x = intraFontPrint(ltn0, x, y, "huge");
-        intraFontSetStyle(ltn0, 1.0f,WHITE,BLACK,0);
+        y += 30;
+        intraFontPrint(ltn[8], 10, y, "Scaling: ");
+		intraFontSetStyle(ltn[0], 0.5f,WHITE,BLACK,0);
+		x = intraFontPrint(ltn[0], 80, y, "tiny, ");
+        intraFontSetStyle(ltn[0], 0.75f,WHITE,BLACK,0);
+		x = intraFontPrint(ltn[0], x, y, "small, ");
+        intraFontSetStyle(ltn[0], 1.0f,WHITE,BLACK,0);
+		x = intraFontPrint(ltn[0], x, y, "regular, ");
+        intraFontSetStyle(ltn[0], 1.25f,WHITE,BLACK,0);
+		x = intraFontPrint(ltn[0], x, y, "large, ");
+        intraFontSetStyle(ltn[0], 1.5f,WHITE,BLACK,0);
+		x = intraFontPrint(ltn[0], x, y, "huge"); 
+		intraFontSetStyle(ltn[0], 1.0f,WHITE,BLACK,0);
+		
+		y += 20;
+        intraFontPrint(ltn[8], 10, y, "Align: ");
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_LEFT);
+		intraFontPrint(ltn[8], 80, y, "left");
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_CENTER);
+		intraFontPrint(ltn[8], (80+470)/2, y, "center");
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_RIGHT);
+        intraFontPrint(ltn[8], 470, y, "right");
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
 
 		// End drawing
 		sceGuFinish();
@@ -179,23 +218,12 @@ int main()
     //saveImage("scrshot.png", getVramDisplayBuffer(), SCREEN_WIDTH, SCREEN_HEIGHT, PSP_LINE_SIZE, 0);
 
 	// Unload our fonts
-	intraFontUnload(ltn0);
-    intraFontUnload(ltn1);
-    intraFontUnload(ltn2);    
-    intraFontUnload(ltn3);
-    intraFontUnload(ltn4);
-    intraFontUnload(ltn5);
-    intraFontUnload(ltn6);    
-    intraFontUnload(ltn7);
-    intraFontUnload(ltn8);
-    intraFontUnload(ltn9);
-    intraFontUnload(ltn10);    
-    intraFontUnload(ltn11);
-    intraFontUnload(ltn12);
-    intraFontUnload(ltn13);
-    intraFontUnload(ltn14);    
-    intraFontUnload(ltn15);
+    for (i = 0; i < 16; i++) {
+        intraFontUnload(ltn[i]);
+    }
     intraFontUnload(jpn0);
+	intraFontUnload(kr0);
+    intraFontUnload(arib);
 	
 	// Shutdown font library
 	intraFontShutdown();
