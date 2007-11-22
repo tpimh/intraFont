@@ -1,6 +1,6 @@
 intraFont - A bitmap font library for PSP using the PSP's internal font (firmware pgf files)
 
-intraFont Version 0.2 by BenHur - http://www.psp-programming.com/benhur
+intraFont Version 0.21 by BenHur - http://www.psp-programming.com/benhur
 
 intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
 
@@ -9,7 +9,7 @@ intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
 The library loads a pgf font from firmware and generates a 4-bit paletted bitmap font texture on
 the fly when drawing text. It caches previously drawn characters and is accurate to 1/4 pixel.
 
-As of version 0.2 intraFont supports regular, italic and/or bold Latin, Japanese, Korean and
+As of version 0.21 intraFont supports regular, italic and/or bold Latin, Japanese, Korean and
 symbol fonts: flash0:/font/ltn0.pgf, ltn1.pgf, ..., ltn15.pgf, jpn0.pgf, kr0.pgf and arib.pgf
 (kr0.pgf and arib.pgf might be missing/replaced by a dummy file depending on the CFW).
 
@@ -53,7 +53,7 @@ ltn0-7  ¦   52ms,  117kB, 2.5kCPS(*)¦   52ms,  215kB, 2.5kCPS ¦  190ms, 122kB, 1
 ltn8-15 ¦   35ms,   85kB, 4.2kCPS   ¦   35ms,  184kB, 4.2kCPS ¦   95ms,  66kB, 100kCPS
 jpn0    ¦ 1015ms, 1805kB, 0.5kCPS   ¦ 1015ms, 1903kB, 0.5kCPS ¦   - too many glyphs -
 kr0     ¦  340ms,  640kB, 0.7kCPS   ¦  340ms,  738kB, 0.7kCPS ¦ 1926ms, 451kB,  70kCPS(**)
-arib    ¦  177ms,  273kB, 1.8kCPS   ¦  117ms,  371kB, 1.8kCPS ¦   - too many glyphs -
+arib    ¦  177ms,  272kB, 1.8kCPS   ¦  177ms,  371kB, 1.8kCPS ¦   - too many glyphs -
 ------------------------------------------------------------------------------------------
 
 (*)  Low speeds (<10kCPS) occur when characters are not cached. Printing the same characters a
@@ -61,6 +61,10 @@ arib    ¦  177ms,  273kB, 1.8kCPS   ¦  117ms,  371kB, 1.8kCPS ¦   - too many gly
 (**) kr0 is slower because one character can consist of up to three glyphs.
 
 -=Changelog=-
+
+0.21 - no new features, bugfix version only
+     - bug fixed which could cause graphical glitches (thanks to StrmnNrmn)
+     - bug fixed where intraFontMeasureText() could return a wrong value (thanks to StrmnNrmn)
 
 0.2  - added support for Korean (kr0.pgf) and symbols (arib.pgf)
      - added cache options (cache size and pre-cache all)

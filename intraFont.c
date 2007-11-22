@@ -1,7 +1,7 @@
 /*
  * intraFont.c
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.2 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.21 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -649,7 +649,7 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
 	if (changed) return 0.0f; //not all chars fit into texture -> abort (better solution: split up string and call intraFontPrintUCS2 twice)
 	
 	//reserve memory in displaylist
-	v = sceGuGetMemory((sizeof(fontVertex)<<2) * (n_glyphs+n_sglyphs));
+	v = sceGuGetMemory(((n_glyphs+n_sglyphs)<<1) * sizeof(fontVertex));
 
 	int s_index = 0, c_index = n_sglyphs, last_c_index = n_sglyphs; // index for shadow and character/overlay glyphs	
 	for(i = 0; i < length; i++) {
@@ -743,7 +743,7 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
 	if (!(font->options & INTRAFONT_ACTIVE) || (reactivate == 1)) intraFontActivate(font);
 	
 	sceGuDisable(GU_DEPTH_TEST);
-	sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF|GU_COLOR_8888|GU_VERTEX_32BITF|GU_TRANSFORM_2D, (n_glyphs+n_sglyphs)<<2, 0, v);
+	sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF|GU_COLOR_8888|GU_VERTEX_32BITF|GU_TRANSFORM_2D, (n_glyphs+n_sglyphs)<<1, 0, v);
 	sceGuEnable(GU_DEPTH_TEST);
 	
 	return left+width;
@@ -757,7 +757,7 @@ float intraFontMeasureText(intraFont *font, const char *text) {
 	
 	while ((text[length] > 0) && (text[length] != '\n')) length++; //strlen until end of string or newline
 	
-	for(i = 0; i < strlen(text); i++) { 
+	for(i = 0; i < length; i++) { 
 		unsigned short char_id = intraFontGetID(font,text[i]); 
 		if (char_id < font->n_chars) 
 			x += (font->options & INTRAFONT_WIDTH_FIX) ? (font->options & PGF_WIDTH_MASK)*font->size : (font->glyph[char_id].advance)*font->size*0.25f; 

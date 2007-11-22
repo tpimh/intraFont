@@ -1,7 +1,7 @@
 /*
  * intraFont.h
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.2 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.21 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
