@@ -1,7 +1,7 @@
 /*
  * fonttest.c
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.21 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.22 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -50,7 +50,7 @@ int main() {
 	pspDebugScreenInit();
 	SetupCallbacks();
     
-    pspDebugScreenPrintf("intraFont 0.21 - 2007 by BenHur\n\nLoading fonts: 0%%");
+    pspDebugScreenPrintf("intraFont 0.22 - 2007 by BenHur\n\nLoading fonts: 0%%");
         
     // Init intraFont library
     intraFontInit();
@@ -61,12 +61,12 @@ int main() {
     int i;
     for (i = 0; i < 16; i++) {
         sprintf(file, "flash0:/font/ltn%d.pgf", i); 
-        ltn[i] = intraFontLoad(file,0);                         //<- this is where the actual loading happens
+        ltn[i] = intraFontLoad(file,INTRAFONT_CACHE_ASCII);     //<- this is where the actual loading happens (loads standard ASCII chars ONLY)
 		pspDebugScreenSetXY(15,2);
         pspDebugScreenPrintf("%d%%",(i+1)*100/19);
     }
-    
-    intraFont* jpn0 = intraFontLoad("flash0:/font/jpn0.pgf",0); //japanese font (and parts of latin)
+
+    intraFont* jpn0 = intraFontLoad("flash0:/font/jpn0.pgf",INTRAFONT_STRING_SJIS); //japanese font (with SJIS text string encoding)
     pspDebugScreenSetXY(15,2);
     pspDebugScreenPrintf("%d%%",17*100/19);
         
@@ -93,7 +93,7 @@ int main() {
 		LITEGRAY = 0xFFBFBFBF,
 		GRAY =  0xFF7F7F7F,
 		DARKGRAY = 0xFF3F3F3F,		
-		BLACK = 0xFF000000
+		BLACK = 0xFF000000,
 	};
 
 	while(running)
@@ -106,9 +106,9 @@ int main() {
 		// Draw various text
         float x,y = 25;
 		intraFontSetStyle(ltn[4], 1.0f,BLACK,WHITE,INTRAFONT_ALIGN_CENTER);
-		intraFontPrint(ltn[4], 240, y, "intraFont 0.21 - 2007 by BenHur");
+		intraFontPrint(ltn[4], 240, y, "intraFont 0.22 - 2007 by BenHur");
         intraFontSetStyle(ltn[4], 1.0f,WHITE,BLACK,0);
-        
+		        
 		y += 30;
 		intraFontPrint(ltn[8],  10, y, "Latin Sans-Serif: ");
 		intraFontPrint(ltn[0], 180, y, "regular, ");
@@ -136,23 +136,27 @@ int main() {
         intraFontPrint(ltn[11], 270, y, "italic, ");
         intraFontPrint(ltn[13], 330, y, "bold, ");
         intraFontPrint(ltn[15], 390, y, "both");
-        
+		
         y += 25;
-        intraFontPrintf(ltn[8], 10, y, "Japanese: ");
+        intraFontPrintf(ltn[8], 10, y, "JPN (UCS2): ");
         unsigned short ucs2_jpn[8]    = { 0x3053, 0x3093, 0x306b, 0x3061, 0x306f, 0x4e16, 0x754c, 0 };
-        x = intraFontPrintUCS2(jpn0, 80, y, ucs2_jpn); 
-		if (x == 80) intraFontPrint(ltn[8], 80, y, "[n/a]");
+        x = intraFontPrintUCS2(jpn0, 100, y, ucs2_jpn); //UCS-2 encoded text string
+		if (x == 100) intraFontPrint(ltn[8], 100, y, "[n/a]");
         
-        intraFontPrintf(ltn[8], 250, y, "Korean: ");
+        intraFontPrintf(ltn[8], 270, y, "Korean: ");
 		unsigned short ucs2_kr[8]    = { 0xAC00, 0xAC01, 0xAC02, 0xAC03, 0xAC04, 0xAC05, 0xAC06, 0 };
-        x = intraFontPrintUCS2(kr0, 320, y, ucs2_kr); 
-		if (x == 320) intraFontPrint(ltn[8], 320, y, "[n/a]");
+        x = intraFontPrintUCS2(kr0, 340, y, ucs2_kr); 
+		if (x == 340) intraFontPrint(ltn[8], 340, y, "[n/a]");
         
 		y += 20;        
-        intraFontPrintf(ltn[8], 10, y, "Symbols: ");
+		intraFontPrintf(ltn[8], 10, y, "JPN (S-JIS): ");
+        x = intraFontPrint(jpn0, 100, y, "イントラフォント"); //S-JIS encoded text string (flag INTRAFONT_STRING_SJIS set in intraFontLoad call)
+		if (x == 100) intraFontPrint(ltn[8], 100, y, "[n/a]");
+		
+        intraFontPrintf(ltn[8], 270, y, "Symbols: ");
         unsigned short ucs2_arib[6]    = { 57786, 57787, 57788, 57789, 57790, 0 };
-        x = intraFontPrintUCS2(arib, 80, y, ucs2_arib);
-		if (x == 80) intraFontPrint(ltn[8], 80, y, "[n/a]");
+        x = intraFontPrintUCS2(arib, 340, y, ucs2_arib);
+		if (x == 340) intraFontPrint(ltn[8], 340, y, "[n/a]");
         
         y += 25;
 		intraFontPrint(ltn[8], 10, y, "Colors: ");

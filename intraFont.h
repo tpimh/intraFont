@@ -1,7 +1,7 @@
 /*
  * intraFont.h
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.21 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.22 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -29,11 +29,15 @@ extern "C" {
 #define INTRAFONT_WIDTH_VAR     0x0000 //default: variable-width
 #define INTRAFONT_WIDTH_FIX     0x0800 //set your custom fixed witdh to 24 pixels: INTRAFONT_WIDTH_FIX | 24 
                                        //(max is 255, set to 0 to use default fixed width, this width will be scaled by size)
-#define INTRAFONT_ACTIVE        0x1000 //assumes the font-texture resides inside sceGuTex already, prevents unecessary reloading -> very small speed-gain
-#define INTRAFONT_CACHE_SMALL   0x2000 //128x128 texture ( enough to cache only about 25 chars, not recommended)
+#define INTRAFONT_ACTIVE        0x1000 //assumes the font-texture resides inside sceGuTex already, prevents unecessary reloading -> very small speed-gain									   
+#define INTRAFONT_STRING_ASCII  0x0000 //default: interpret strings as ascii text
+#define INTRAFONT_STRING_SJIS   0x2000 //interpret strings as shifted-jis (japanese)
 #define INTRAFONT_CACHE_MED     0x0000 //default: 256x256 texture (enough to cache about 100 chars)
 #define INTRAFONT_CACHE_LARGE   0x4000 //512x512 texture(enough to cache all chars of ltn0.pgf or ... or ltn15.pgf or kr0.pgf)
-#define INTRAFONT_CACHE_ALL     0x6000 //try to cache all chars during fontload (uses less memory and is faster to draw text, but slower to load font)
+#define INTRAFONT_CACHE_ASCII   0x8000 //try to cache all ASCII chars during fontload (uses less memory and is faster to draw text, but slower to load font)
+                                       //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a medium texture
+									   //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
+#define INTRAFONT_CACHE_ALL     0xC000 //try to cache all chars during fontload (uses less memory and is faster to draw text, but slower to load font)
                                        //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a large texture
 									   //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
 
@@ -47,7 +51,10 @@ extern "C" {
 #define PGF_CHARGLYPH     0x20
 #define PGF_SHADOWGLYPH   0x40 //warning: this flag is not contained in the metric header flags and is only provided for simpler call to intraFontGetGlyph - ONLY check with (flags & PGF_CHARGLYPH)
 #define PGF_CACHED        0x80
-#define PGF_WIDTH_MASK    0xFF
+#define PGF_WIDTH_MASK    0x00FF
+#define PGF_OPTIONS_MASK  0x1FFF
+#define PGF_STRING_MASK   0x2000
+#define PGF_CACHE_MASK    0xC000
 
 
 /**
@@ -217,7 +224,7 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
  *
  * @param y - Y position on screen
  *
- * @param text - (ASCII) Text to draw
+ * @param text - (ASCII or S-JIS) Text to draw
  *
  * @returns The x position after the last char
  */
@@ -232,7 +239,7 @@ float intraFontPrint(intraFont *font, float x, float y, const char *text);
  *
  * @param y - Y position on screen
  *
- * @param text - (ASCII) Text to draw
+ * @param text - (ASCII or S-JIS) Text to draw
  *
  * @returns The x position after the last char
  */
@@ -243,7 +250,7 @@ float intraFontPrintf(intraFont *font, float x, float y, const char *text, ...);
  *
  * @param font - A valid ::intraFont
  *
- * @param text - (ASCII) Text to measure
+ * @param text - (ASCII or S-JIS) Text to measure
  *
  * @returns The total width of the text (until the first newline char)
  */
