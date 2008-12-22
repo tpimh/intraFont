@@ -1,6 +1,6 @@
 intraFont - A bitmap font library for PSP using the PSP's internal font (firmware pgf files)
 
-intraFont Version 0.22 by BenHur - http://www.psp-programming.com/benhur
+intraFont Version 0.23 by BenHur - http://www.psp-programming.com/benhur
 
 intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
 
@@ -69,8 +69,18 @@ arib    ¦  177ms,  266kB, 1.9kCPS   ¦  177ms,  362kB, 1.9kCPS ¦  - no ASCII glyp
 
 If you don't need the S-JIS string parsing: add -DINTRAFONT_NO_SJIS to the CFLAGS in your makefile
 (this excludes the conversion table and saves around 18kB).
+If you don't need the codepage conversion: add -DINTRAFONT_NO_CP to the CFLAGS in your makefile
+(this excludes the conversion table and saves around 1.5kB).
 
 -=Changelog=-
+
+0.23 - added support for UTF-8 string parsing: use flag INTRAFONT_STRING_UTF8 in intraFontLoad()
+       (thanks to NexTOS)
+     - added support for codepages (conversion of extended ascii to unicode depending on source):
+       use flag INTRAFONT_STRING_CP??? in intraFontLoad(), where ??? is 437, 850 or 1252
+       (let me know if you need other codepages; default conversion uses ISO-8859-1)
+     - encoding type of text string (ASCII, UTF-8, S-JIS or codepage x) can also be set with
+       intraFontSetEncoding()
 
 0.22 - added support for S-JIS string parsing: use flag INTRAFONT_STRING_SJIS in intraFontLoad()        
        (thanks to psp-kaihatu-yotien - http://psp.nukenin.jp/ http://ameblo.jp/pspdevblog/ )
