@@ -1,7 +1,7 @@
 /*
  * intraFont.h
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.23 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -26,6 +26,7 @@ extern "C" {
 #define INTRAFONT_ALIGN_LEFT    0x00000000 //default: left-align the text
 #define INTRAFONT_ALIGN_CENTER  0x00000200
 #define INTRAFONT_ALIGN_RIGHT   0x00000400
+#define INTRAFONT_ALIGN_FULL    0x00000600 //full justify text to width set by intraFontSetTextWidth()
 #define INTRAFONT_WIDTH_VAR     0x00000000 //default: variable-width
 #define INTRAFONT_WIDTH_FIX     0x00000800 //set your custom fixed witdh to 24 pixels: INTRAFONT_WIDTH_FIX | 24 
                                            //(max is 255, set to 0 to use default fixed width, this width will be scaled by size)
@@ -57,6 +58,7 @@ extern "C" {
 #define PGF_CACHED        0x80
 #define PGF_WIDTH_MASK    0x000000FF
 #define PGF_OPTIONS_MASK  0x00001FFF
+#define PGF_ALIGN_MASK    0x00000600
 #define PGF_CACHE_MASK    0x0000C000
 #define PGF_STRING_MASK   0x000F0000
 
@@ -218,15 +220,18 @@ void intraFontSetEncoding(intraFont *font, unsigned int options);
  *
  * @param y - Y position on screen
  *
- * @param color - Text color
- *
- * @param shadowColor - Shadow color (use 0 for no shadow)
+ * @param width - column width for automatic line breaking (intraFontPrintColumn... versions only)
  *
  * @param text - UCS-2 encoded text to draw
  *
+ * @param length - char length of text to draw (...Ex versions only)
+ *
  * @returns The x position after the last char
  */
-float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short *text);
+float intraFontPrintUCS2        (intraFont *font, float x, float y, const unsigned short *text);
+float intraFontPrintUCS2Ex      (intraFont *font, float x, float y, const unsigned short *text, int length);
+float intraFontPrintColumnUCS2  (intraFont *font, float x, float y, float width, const unsigned short *text);
+float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float width, const unsigned short *text, int length);
 
 /**
  * Draw text along the baseline starting at x, y.
@@ -237,11 +242,18 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
  *
  * @param y - Y position on screen
  *
- * @param text - (ASCII & extended ASCII, S-JIS or UTF-8 encoded) Text to draw
+ * @param width - column width for automatic line breaking (intraFontPrintColumn... versions only)
+ *
+ * @param text - Text to draw (ASCII & extended ASCII, S-JIS or UTF-8 encoded)
+ *
+ * @param length - char length of text to draw (...Ex versions only)
  *
  * @returns The x position after the last char
  */
-float intraFontPrint(intraFont *font, float x, float y, const char *text);
+float intraFontPrint        (intraFont *font, float x, float y, const char *text);
+float intraFontPrintEx      (intraFont *font, float x, float y, const char *text, int length);
+float intraFontPrintColumn  (intraFont *font, float x, float y, float width, const char *text);
+float intraFontPrintColumnEx(intraFont *font, float x, float y, float width, const char *text, int length);
 
 /**
  * Draw text along the baseline starting at x, y (with formatting).
@@ -252,22 +264,33 @@ float intraFontPrint(intraFont *font, float x, float y, const char *text);
  *
  * @param y - Y position on screen
  *
- * @param text - (ASCII or S-JIS) Text to draw
+ * @param width - column width for automatic line breaking (intraFontPrintfColumn... versions only)
+ *
+ * @param text - Text to draw (ASCII & extended ASCII, S-JIS or UTF-8 encoded)
+ *
+ * @param length - char length of text to draw (...Ex versions only)
  *
  * @returns The x position after the last char
  */
-float intraFontPrintf(intraFont *font, float x, float y, const char *text, ...);
+float intraFontPrintf        (intraFont *font, float x, float y, const char *text, ...);
+//the following functions might be implemented in a future version of intraFont
+//float intraFontPrintfEx      (intraFont *font, float x, float y, const char *text, int length, ...);
+//float intraFontPrintfColumn  (intraFont *font, float x, float y, float width, const char *text, ...);
+//float intraFontPrintfColumnEx(intraFont *font, float x, float y, float width, const char *text, int length, ...);
 
 /**
  * Measure a length of text if it were to be drawn
  *
  * @param font - A valid ::intraFont
  *
- * @param text - (ASCII or S-JIS) Text to measure
+ * @param text - Text to measure (ASCII & extended ASCII, S-JIS or UTF-8 encoded)
+ *
+ * @param length - char length of text to measure (...Ex version only)
  *
  * @returns The total width of the text (until the first newline char)
  */
-float intraFontMeasureText(intraFont *font, const char *text);
+float intraFontMeasureText  (intraFont *font, const char *text);
+float intraFontMeasureTextEx(intraFont *font, const char *text, int length);
 
 /**
  * Measure a length of UCS-2 encoded text if it were to be drawn
@@ -276,9 +299,12 @@ float intraFontMeasureText(intraFont *font, const char *text);
  *
  * @param text - UCS-2 encoded text to measure
  *
+ * @param length - char length of text to measure (...Ex version only)
+ *
  * @returns The total width of the text (until the first newline char)
  */
-float intraFontMeasureTextUCS2(intraFont *font, const unsigned short *text); 
+float intraFontMeasureTextUCS2  (intraFont *font, const unsigned short *text); 
+float intraFontMeasureTextUCS2Ex(intraFont *font, const unsigned short *text, int length); 
 
 /** @} */
 

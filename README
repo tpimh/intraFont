@@ -1,6 +1,6 @@
 intraFont - A bitmap font library for PSP using the PSP's internal font (firmware pgf files)
 
-intraFont Version 0.23 by BenHur - http://www.psp-programming.com/benhur
+intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
 
 intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
 
@@ -12,12 +12,6 @@ the fly when drawing text. It caches previously drawn characters and is accurate
 As of version 0.22 intraFont supports regular, italic and/or bold Latin, Japanese, Korean and
 symbol fonts: flash0:/font/ltn0.pgf, ltn1.pgf, ..., ltn15.pgf, jpn0.pgf, kr0.pgf and arib.pgf
 (kr0.pgf and arib.pgf might be missing/replaced by a dummy file depending on the CFW).
-
-Unless this version has a severe bug, there are currently no plans for a major future version. 
-However there are still things that can be improved:
-- implement INTRAFONT_VERTADVANCE
-- maybe increase accuracy to 1/64 pixel (at the cost of memory)
-- speed & memory optimizations, bug fixes, cleanup, ...
 
 Known issues:
 - if more than 100 different characters are drawn on the same screen (i.e. before the next
@@ -55,7 +49,7 @@ Rule of thumb:
 The following table shows typical performance numbers:
 
 font:   ¦ INTRAFONT_CACHE_MED (def) ¦  INTRAFONT_CACHE_LARGE  ¦ INTRAFONT_CACHE_ASCII ¦  INTRAFONT_CACHE_ALL
---------+---------------------------+-------------------------+--------------------- -+--------------------------
+--------+---------------------------+-------------------------+-----------------------+--------------------------
 ltn0-7  ¦   52ms,  114kB, 2.5kCPS(*)¦   52ms,  210kB, 2.5kCPS ¦  83ms, 33kB, 100kCPS  ¦  191ms, 119kB, 100kCPS
 ltn8-15 ¦   36ms,   83kB, 4.1kCPS   ¦   36ms,  179kB, 4.1kCPS ¦  54ms, 20kB, 100kCPS  ¦   95ms,  64kB, 100kCPS
 jpn0    ¦ 1020ms, 1763kB, 0.5kCPS   ¦ 1020ms, 1859kB, 0.5kCPS ¦ 997ms, 33kB, 100kCPS  ¦   - too many glyphs -
@@ -73,6 +67,15 @@ If you don't need the codepage conversion: add -DINTRAFONT_NO_CP to the CFLAGS i
 (this excludes the conversion table and saves around 1.5kB).
 
 -=Changelog=-
+
+0.24 - added column printing with automatic linebreaks - no need to worry about overwriting  
+       parts of the screen or printing outside the screen anymore (use intraFontPrintColumn()) 
+     - added full justification (flush left&right) for column printing (flag INTRAFONT_ALIGN_FULL)
+     - various optimizations related to UCS2 conversion (thanks to StrmnNrmn)
+     - added functions to print/measure the first n chars of a string (intraFontPrintEx() and
+       other ...Ex() functions; thanks to StrmnNrmn)
+     - bug fixed where intraFontMeasureText() could return a wrong value because multi-byte 
+       strings (S-JIS and UTF-8) and codepages were not yet properly handled
 
 0.23 - added support for UTF-8 string parsing: use flag INTRAFONT_STRING_UTF8 in intraFontLoad()
        (thanks to NexTOS)

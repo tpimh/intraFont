@@ -1,7 +1,7 @@
 /*
  * intraFont.c
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.23 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -575,8 +575,8 @@ void intraFontSetEncoding(intraFont *font, unsigned int options) {
 	font->options = (font->options & PGF_OPTIONS_MASK) | (options & PGF_STRING_MASK) | (font->options & PGF_CACHE_MASK);
 }
 
-int intraFontSJIStoUCS2(unsigned char *text, unsigned short *ucs2) {
-	int i = 0, length = 0;
+int intraFontSJIStoUCS2(unsigned char *text, unsigned short *ucs2, int length) {
+	int i = 0, i_out = 0;
 
 #ifndef INTRAFONT_NO_SJIS
     static const unsigned short s2u_80[]= { 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb, 0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb,0x30fb};
@@ -663,45 +663,45 @@ int intraFontSJIStoUCS2(unsigned char *text, unsigned short *ucs2) {
 	s2u_f0,s2u_f1,s2u_f2,s2u_f3,s2u_f4,s2u_f5,s2u_f6,s2u_f7,
 	s2u_f8,s2u_f9,s2u_fa,s2u_fb,s2u_fc,s2u_fd,s2u_fe,s2u_ff};
 	
-	while (text[i]) {
+	while (text[i] && i_out < length) {
 		if (text[i] >= 0xa0u && text[i] <= 0xdfu) {
-			ucs2[length] = 0xff60u + text[i] - 0xa0u; 
-			i++; length++;
+			ucs2[i_out] = 0xff60u + text[i] - 0xa0u; 
+			i++; i_out++;
 		} else if (text[i]&0x80) {
-			ucs2[length] = sjis2u[text[i] - 0x80u][text[i+1] - 0x40u];
-			i += 2; length++;
+			ucs2[i_out] = sjis2u[text[i] - 0x80u][text[i+1] - 0x40u];
+			i += 2; i_out++;
 		} else {
-			ucs2[length] = text[i]; 
-			i++; length++;
+			ucs2[i_out] = text[i]; 
+			i++; i_out++;
 		}
 	}
 #endif	
 	
-	return length;
+	return i_out;
 }
 
 
-int intraFontUTF8toUCS2(unsigned char *text, unsigned short *ucs2) {
-    int i = 0, length = 0;
+int intraFontUTF8toUCS2(unsigned char *text, unsigned short *ucs2, int length) {
+    int i = 0, i_out = 0;
 
-    while (text[i]) {
+    while (text[i] && i_out < length) {
 		if  (text[i] <= 0x7FU) {       //ASCII
-			ucs2[length] = text[i]; 
-			i++;    length++; 
+			ucs2[i_out] = text[i]; 
+			i++;    i_out++; 
 		} else if (text[i] <= 0xC1U) { //part of multi-byte or overlong encoding ->ignore
 			i++;          
 		} else if (text[i] <= 0xDFU) { //2-byte
-			ucs2[length] = ((text[i]&0x001fu)<<6) | (text[i+1]&0x003fu); 
-			i += 2; length++; 
+			ucs2[i_out] = ((text[i]&0x001fu)<<6) | (text[i+1]&0x003fu); 
+			i += 2; i_out++; 
 		} else if (text[i] <= 0xEFU) { //3-byte
-			ucs2[length] = ((text[i]&0x001fu)<<12) | ((text[i+1]&0x003fu)<<6) | (text[i+2]&0x003fu); 
-			i += 3; length++; 
+			ucs2[i_out] = ((text[i]&0x001fu)<<12) | ((text[i+1]&0x003fu)<<6) | (text[i+2]&0x003fu); 
+			i += 3; i_out++; 
 		} else i++;                    //4-byte, restricted or invalid range ->ignore
 	}
-    return length;
+    return i_out;
 }
 
-int intraFontCPtoUCS2(unsigned char *text, unsigned short *ucs2, unsigned int codepage) {
+int intraFontCPtoUCS2(unsigned char *text, unsigned short *ucs2, int length, unsigned int codepage) {
 
 #ifndef INTRAFONT_NO_CP
 	//cp 437 to UCS2:
@@ -715,31 +715,17 @@ int intraFontCPtoUCS2(unsigned char *text, unsigned short *ucs2, unsigned int co
 	int i = 0;
 	switch (codepage) {
 #ifndef INTRAFONT_NO_CP
-		case INTRAFONT_STRING_CP437:	while (text[i]) { ucs2[i] = cp4372u[text[i]]; i++; } break;
-		case INTRAFONT_STRING_CP850:	while (text[i]) { ucs2[i] = cp8502u[text[i]]; i++; } break;
-		case INTRAFONT_STRING_CP1252:	while (text[i]) { ucs2[i] = cp12522u[text[i]]; i++; } break;
+		case INTRAFONT_STRING_CP437:	while (text[i] && i < length) { ucs2[i] = cp4372u[text[i]]; i++; } break;
+		case INTRAFONT_STRING_CP850:	while (text[i] && i < length) { ucs2[i] = cp8502u[text[i]]; i++; } break;
+		case INTRAFONT_STRING_CP1252:	while (text[i] && i < length) { ucs2[i] = cp12522u[text[i]]; i++; } break;
 #endif
-		default:						while (text[i]) { ucs2[i] = (unsigned short)text[i]; i++; }
+		default:						while (text[i] && i < length) { ucs2[i] = (unsigned short)text[i]; i++; }
 	}
 	return i;
 }
 
-float intraFontPrintf(intraFont *font, float x, float y, const char *text, ...) {
-	if(!font) return x;
-
-	char buffer[256];
-	va_list ap;
-	
-	va_start(ap, text);
-	vsnprintf(buffer, 256, text, ap);
-	va_end(ap);
-	buffer[255] = 0;
-	
-	return intraFontPrint(font, x, y, buffer);
-}
-
-float intraFontPrint(intraFont *font, float x, float y, const char *text) {
-    if (!text || strlen(text) == 0 || !font) return x;
+int intraFontStrLen(intraFont *font, const char *text) {
+	if (!text || *text == '\0' || !font) return 0;
 	
 	int i = 0, length = 0;
 	if ((font->options & PGF_STRING_MASK) == INTRAFONT_STRING_SJIS) {
@@ -758,34 +744,96 @@ float intraFontPrint(intraFont *font, float x, float y, const char *text) {
 	} else {
 		length = strlen(text);
 	}
+
+	return length;
+}
+
+int intraFontUCS2Len(intraFont *font, const unsigned short *text) {
+	if (!text || *text == '\0' || !font) return 0;
+
+	int length = 0;
+	while (text[length]) length++;
+
+	return length;
+}
+
+float intraFontPrintf(intraFont *font, float x, float y, const char *text, ...) {
+	if(!font) return x;
+
+	char buffer[256];
+	va_list ap;
 	
-    unsigned short* ucs2_text = (unsigned short*)malloc((length+1)*sizeof(unsigned short));
+	va_start(ap, text);
+	vsnprintf(buffer, 256, text, ap);
+	va_end(ap);
+	buffer[255] = 0;
+	
+	return intraFontPrint(font, x, y, buffer);
+}
+
+float intraFontPrint(intraFont *font, float x, float y, const char *text) {
+	return intraFontPrintColumnEx(font, x, y, 0.0f, text, intraFontStrLen(font, text));
+}
+
+float intraFontPrintEx(intraFont *font, float x, float y, const char *text, int length) {
+	return intraFontPrintColumnEx(font, x, y, 0.0f, text, length);
+}
+
+float intraFontPrintColumn(intraFont *font, float x, float y, float column, const char *text) {
+	return intraFontPrintColumnEx(font, x, y, column, text, intraFontStrLen(font, text));
+}
+
+float intraFontPrintColumnEx(intraFont *font, float x, float y, float column, const char *text, int length) {
+    if (!text || length <= 0 || !font) return x;
+	
+#define LOCAL_BUFFER_LENGTH 256
+	unsigned short buffer[ LOCAL_BUFFER_LENGTH ];
+    unsigned short* ucs2_text = buffer;
+	
+	// Allocate a temporary buffer if too long
+	if (length > LOCAL_BUFFER_LENGTH) ucs2_text = (unsigned short*)malloc(length*sizeof(unsigned short));
     if (!ucs2_text) return x;
 	
 	if ((font->options & PGF_STRING_MASK) == INTRAFONT_STRING_SJIS) {
-        length = intraFontSJIStoUCS2((unsigned char*)text, ucs2_text);
+        length = intraFontSJIStoUCS2((unsigned char*)text, ucs2_text, length);
 	} else if ((font->options & PGF_STRING_MASK) == INTRAFONT_STRING_UTF8) {
-        length = intraFontUTF8toUCS2((unsigned char*)text, ucs2_text);
+        length = intraFontUTF8toUCS2((unsigned char*)text, ucs2_text, length);
 	} else {
-		length = intraFontCPtoUCS2((unsigned char*)text, ucs2_text, font->options & PGF_STRING_MASK);
+		length = intraFontCPtoUCS2((unsigned char*)text, ucs2_text, length, font->options & PGF_STRING_MASK);
     } 
-	ucs2_text[length] = 0;
 
-    x = intraFontPrintUCS2(font, x, y, ucs2_text);
+	if (column >= 0) {
+		x = intraFontPrintColumnUCS2Ex(font, x, y, column, ucs2_text, length);
+	} else {                                                      //negative column prevents from drawing -> measure text
+		x = intraFontMeasureTextUCS2Ex(font, ucs2_text, length);  //(hack to share local buffer between intraFontPrint and intraFontMeasure)
+	}
 	
-    free(ucs2_text);
+	// Free temporary buffer if allocated
+	if (ucs2_text != buffer) free(ucs2_text);
 	
     return x;
 }
 
 float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short *text) {
-	if(!font) return x;
+	return intraFontPrintColumnUCS2Ex(font, x, y, 0.0f, text, intraFontUCS2Len(font, text));
+}
+
+float intraFontPrintUCS2Ex(intraFont *font, float x, float y, const unsigned short *text, int length) {
+	return intraFontPrintColumnUCS2Ex(font, x, y, 0.0f, text, length);
+}
+
+float intraFontPrintColumnUCS2(intraFont *font, float x, float y, float column, const unsigned short *text) {
+	return intraFontPrintColumnUCS2Ex(font, x, y, 0.0f, text, intraFontUCS2Len(font, text));
+}
+
+float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column, const unsigned short *text, int length) {
+	if (!text || length <= 0 || !font) return x;
 	
 	float glyphscale = font->size;
 	float width = 0.0f, height = font->advancey * glyphscale / 4.0;
-	float left = x, top = y - height; 
-	if (font->options & INTRAFONT_ALIGN_RIGHT)  left -= intraFontMeasureTextUCS2(font, text);
-	if (font->options & INTRAFONT_ALIGN_CENTER) left -= intraFontMeasureTextUCS2(font, text)/2.0;
+	float left = x, top = y - 2*height;
+	int eol = -1, n_spaces = -1;
+	float fill = 0.0f;
 	
 	typedef struct {
 		float u, v;
@@ -793,11 +841,6 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
 		float x, y, z;
 	} fontVertex;
 	fontVertex *v, *v0, *v1, *s0, *s1;
-	
-	//count number of characters
-	int length = 0;
-	while (text[length] > 0) length++;
-	if (length == 0) return x;
 	
 	//count number of glyphs to draw and cache BMPs
 	int i, j, n_glyphs, last_n_glyphs, n_sglyphs, changed, count = 0;
@@ -850,8 +893,43 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
 	v = sceGuGetMemory(((n_glyphs+n_sglyphs)<<1) * sizeof(fontVertex));
 
 	int s_index = 0, c_index = n_sglyphs, last_c_index = n_sglyphs; // index for shadow and character/overlay glyphs	
-	for(i = 0; i < length; i++) {
-		unsigned short char_id = intraFontGetID(font,text[i]);
+	for (i = 0; i < length; i++) {
+
+		//calculate left, height and possibly fill for character placement 
+		if ((i == 0) || (text[i] == '\n') || ((column > 0.0f) && (i >= eol) && (text[i] != 32))) { //line-break
+			if (column > 0.0f) {                                                //automatic line-break required
+				n_spaces = -1;
+				eol = -1;
+				fill = 0.0f;
+				for (j = i; j < length; j++) {                                 
+					if (text[j] == '\n') {                                           //newline reached -> no auto-line-break
+						eol = j;
+						break;                                   
+					}
+					if (text[j] == ' ') {                                        //space found for padding or eol
+						n_spaces++;
+						eol = j;
+					}
+					if (intraFontMeasureTextUCS2Ex(font, text+i, j+1-i) > column) { //line too long -> line-break
+						if (eol < 0) eol = j;                                       //break in the middle of the word
+						if (n_spaces > 0) fill = (column-intraFontMeasureTextUCS2Ex(font, text+i, eol-i))/((float)n_spaces);
+						break;
+					}
+				}
+				if (j == length) {
+					eol = length;                                                 //last line
+					while ((text[eol-1] == ' ') && (eol > 1)) eol--;                  //do not display trailing spaces
+				}
+			} else eol = length;                                                  //no column boundary -> display everything
+			
+			left = x;
+			if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_RIGHT)  left -= intraFontMeasureTextUCS2Ex(font, text+i,eol-i);
+			if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_CENTER) left -= intraFontMeasureTextUCS2Ex(font, text+i,eol-i)/2.0;
+			width = 0.0f;
+			height += font->advancey * glyphscale * 0.25;
+		}
+
+		char_id = intraFontGetID(font,text[i]);
 		if (char_id < font->n_chars) {
 		
 			//center glyphs for monospace
@@ -924,16 +1002,10 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
 			} else {
 				width += font->glyph[char_id].advance * glyphscale * 0.25;
 			}
+			if ((text[i] == 32) && ((font->options & INTRAFONT_ALIGN_FULL) == INTRAFONT_ALIGN_FULL)) width += fill;
 			
-		} 
-		
-		if (text[i] == '\n') {
-			left = x;
-			if (font->options & INTRAFONT_ALIGN_RIGHT)  left -= intraFontMeasureTextUCS2(font, text+i+1);
-			if (font->options & INTRAFONT_ALIGN_CENTER) left -= intraFontMeasureTextUCS2(font, text+i+1)/2.0;
-			width = 0.0f;
-			height += font->advancey * glyphscale / 4.0;
-		}
+		} 		
+
 	}
 		
 	//finalize and activate texture (if not already active or has been changed)
@@ -948,31 +1020,25 @@ float intraFontPrintUCS2(intraFont *font, float x, float y, const unsigned short
 }
 
 float intraFontMeasureText(intraFont *font, const char *text) { 
-    if (!font) return 0.0f; 
-	
-	int i, length = 0;
-	float x = 0.0f;
-	
-	while ((text[length] > 0) && (text[length] != '\n')) length++; //strlen until end of string or newline
-	
-	for(i = 0; i < length; i++) { 
-		unsigned short char_id = intraFontGetID(font,text[i]); 
-		if (char_id < font->n_chars) 
-			x += (font->options & INTRAFONT_WIDTH_FIX) ? (font->options & PGF_WIDTH_MASK)*font->size : (font->glyph[char_id].advance)*font->size*0.25f; 
-	}    
-	
-    return x; 
+	return intraFontMeasureTextEx(font, text, intraFontStrLen(font, text));
+}
+
+float intraFontMeasureTextEx(intraFont *font, const char *text, int length) { 
+	return intraFontPrintColumnEx(font, 0.0f, 0.0f, -1.0f, text, length); //explanation: intraFontPrintColumnEx does the String -> UCS2 conversation,
+		                                                                  //but a negative column width triggers measurement without drawing
 } 
 
 float intraFontMeasureTextUCS2(intraFont *font, const unsigned short *text) { 
-   if(!font) return 0.0f; 
+   return intraFontMeasureTextUCS2Ex(font, text, intraFontUCS2Len(font, text));
+}
 
-   int i, length = 0; 
+float intraFontMeasureTextUCS2Ex(intraFont *font, const unsigned short *text, int length) { 
+   if (!text || length <= 0 || !font) return 0.0f; 
+
+   int i; 
    float x = 0.0f; 
 
-   while ((text[length] > 0) && (text[length] != '\n')) length++; //strlen until end of string or newline
-
-   for(i = 0; i < length; i++) { 
+   for (i = 0; (i < length) && (text[i] != '\n'); i++) { //measure until end of string or first newline char
 		unsigned short char_id = intraFontGetID(font,text[i]); 
 		if (char_id < font->n_chars) 
 			x += (font->options & INTRAFONT_WIDTH_FIX) ? (font->options & PGF_WIDTH_MASK)*font->size : (font->glyph[char_id].advance)*font->size*0.25f; 

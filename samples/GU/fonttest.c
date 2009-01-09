@@ -1,7 +1,7 @@
 /*
  * fonttest.c
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.23 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -65,7 +65,7 @@ int main() {
 		BLACK = 0xFF000000,
 	};
     
-    pspDebugScreenPrintf("intraFont 0.23 - 2008 by BenHur\n\nLoading fonts: 0%%");
+    pspDebugScreenPrintf("intraFont 0.24 - 2009 by BenHur\n\nLoading fonts: 0%%");
         
     // Init intraFont library
     intraFontInit();
@@ -148,10 +148,10 @@ int main() {
         // Draw various text
         float x,y = 25;
 		intraFontSetStyle(ltn[4], 1.0f,BLACK,WHITE,INTRAFONT_ALIGN_CENTER);
-		intraFontPrint(ltn[4], 240, y, "intraFont 0.23 - 2008 by BenHur");
+		intraFontPrint(ltn[4], 240, y, "intraFont 0.24 - 2009 by BenHur");
         intraFontSetStyle(ltn[4], 1.0f,WHITE,BLACK,0);
 		        
-		y += 28;
+		y += 23;
 		intraFontPrint(ltn[8],  10, y, "Latin Sans-Serif:");
 		intraFontPrint(ltn[0], 180, y, "regular,");
         intraFontPrint(ltn[2], 270, y, "italic,");
@@ -179,7 +179,7 @@ int main() {
         intraFontPrint(ltn[13], 330, y, "bold,");
         intraFontPrint(ltn[15], 390, y, "both");
 		
-        y += 23;
+        y += 21;
 		intraFontSetEncoding(ltn[8], INTRAFONT_STRING_UTF8);   //set text string encoding to UTF-8
 		intraFontPrint(ltn[8], 10, y, "LTN (UTF-8):");         //(has no effect on std ascii)
 		intraFontPrint(ltn[8], 110, y, "\xC3\xA5 \xC3\xA8 \xC3\xAD \xC3\xB4 \xC3\xBC \xC3\xB1"); //UTF-8 encoded chars with accents on top of them
@@ -211,7 +211,7 @@ int main() {
         x = intraFontPrintUCS2(arib, 350, y, ucs2_arib);
 		if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
         
-        y += 23;
+        y += 21;
 		intraFontPrint(ltn[8], 10, y, "Colors: ");
         intraFontSetStyle(ltn[8], 1.0f,RED,BLUE,0);
 		x = intraFontPrint(ltn[8], 80, y, "colorful, ");
@@ -238,7 +238,7 @@ int main() {
         intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
         x = intraFontPrint(ltn[8], x, y, "variable width");
         
-        y += 28;
+        y += 23;
         intraFontPrint(ltn[8], 10, y, "Scaling: ");
 		intraFontSetStyle(ltn[0], 0.5f,WHITE,BLACK,0);
 		x = intraFontPrint(ltn[0], 80, y, "tiny, ");
@@ -255,11 +255,17 @@ int main() {
 		y += 18;
         intraFontPrint(ltn[8], 10, y, "Align: ");
 		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_LEFT);
-		intraFontPrint(ltn[8], 80, y, "left");
+		t = ((float)(clock() % (CLOCKS_PER_SEC*10))) / ((float)CLOCKS_PER_SEC);
+		int length = (t < 5.0f) ? t*7.1f : (10.0f-t)*7.1f;
+		intraFontPrintColumnEx(ltn[8],  80, y,  90, "left aligned with auto linebreaks  ", length);
+		//NB: intraFontPrintColumnEx() is used to print a sub-string of a given length (last parameter)
+		//    if you want to print the whole string, simply use intraFontPrintColumn() and omit the length parameter
 		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_CENTER);
-		intraFontPrint(ltn[8], (80+470)/2, y, "center");
+		intraFontPrintColumnEx(ltn[8], 225, y, 110, "center aligned with auto linebreaks", length);
         intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_RIGHT);
-        intraFontPrint(ltn[8], 470, y, "right");
+        intraFontPrintColumnEx(ltn[8], 370, y,  90, "right aligned with auto linebreaks ", length);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_FULL);
+        intraFontPrintColumnEx(ltn[8], 390, y,  80, "full justified with auto linebreaks", length);
 		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
 
         
