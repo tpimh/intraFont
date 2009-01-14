@@ -1,7 +1,7 @@
 /*
  * intraFont.c
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.25 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -829,10 +829,11 @@ float intraFontPrintColumnUCS2(intraFont *font, float x, float y, float column, 
 float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column, const unsigned short *text, int length) {
 	if (!text || length <= 0 || !font) return x;
 	
+	unsigned int color = font->color, shadowColor = font->shadowColor;
 	float glyphscale = font->size;
 	float width = 0.0f, height = font->advancey * glyphscale / 4.0;
 	float left = x, top = y - 2*height;
-	int eol = -1, n_spaces = -1;
+	int eol = -1, n_spaces = -1, scroll = 0, textwidth;
 	float fill = 0.0f;
 	
 	typedef struct {
@@ -896,37 +897,122 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 	for (i = 0; i < length; i++) {
 
 		//calculate left, height and possibly fill for character placement 
-		if ((i == 0) || (text[i] == '\n') || ((column > 0.0f) && (i >= eol) && (text[i] != 32))) { //line-break
-			if (column > 0.0f) {                                                //automatic line-break required
-				n_spaces = -1;
-				eol = -1;
-				fill = 0.0f;
-				for (j = i; j < length; j++) {                                 
-					if (text[j] == '\n') {                                           //newline reached -> no auto-line-break
-						eol = j;
-						break;                                   
+		if ((i == 0) || (text[i] == '\n') || ((column > 0.0f) && (i >= eol) && (text[i] != 32))) { //newline
+
+			if (column > 0.0f) {                                                
+				if (font->options & INTRAFONT_SCROLL_LEFT) { //scrolling (any direction) requested
+					eol = length;
+					scroll = 1;
+					left = ((float)((int)x));
+					union { int i; float f; } ux, uleft; 
+					ux.f = x;
+					uleft.f = left;
+					count = ux.i - uleft.i;
+					textwidth = intraFontMeasureTextUCS2Ex(font, text+i, length-i)+1;
+					if (textwidth > column) {  //scrolling really required
+		
+						switch (font->options & PGF_SCROLL_MASK) {
+
+							case INTRAFONT_SCROLL_LEFT:                                  //scroll left
+								sceGuScissor(left-2, 0, left+column+4, 272); //limit to column width
+								if (count < 60) {
+									//show initial text for 1s
+								} else if (count < (textwidth+90)) {
+									left -= (count-60); //scroll left for (textwidth/60) s (speed = 1 pix/frame) and disappear for 0.5s
+								} else if (count < (textwidth+120)) {
+									color       = (color       & 0x00FFFFFF) | ((((color      >>24)*(count-textwidth-90))/30)<<24); //fade-in in 0.5s
+									shadowColor = (shadowColor & 0x00FFFFFF) | ((((shadowColor>>24)*(count-textwidth-90))/30)<<24);
+								} else {
+									ux.f = left;     //reset counter
+								}
+								break;
+
+							case INTRAFONT_SCROLL_SEESAW:  //scroll left and right
+								sceGuScissor(left-column/2-2, 0, left+column/2+4, 272); //limit to column width
+								textwidth -= column;
+								if (count < 60) {
+									left -= column/2; //show initial text (left side) for 1s
+								} else if (count < (textwidth+60)) {
+									left -= column/2+(count-60); //scroll left 
+								} else if (count < (textwidth+120)) {
+									left -= column/2+textwidth; //show right side for 1s
+								} else if (count < (2*textwidth+120)) {
+									left -= column/2+2*textwidth-count+120; //scroll right
+								} else {
+									ux.f = left;     //reset counter
+									left -= column/2;
+								}
+								break;
+
+							case INTRAFONT_SCROLL_RIGHT:  //scroll right
+								sceGuScissor(left-column-2, 0, left+4, 272); //limit to column width
+								if (count < 60) {
+									left -= textwidth; //show initial text for 1s
+								} else if (count < (textwidth+90)) {
+									left -= textwidth-count+60; //scroll right for (textwidth/60) s (speed = 1 pix/frame) and disappear for 0.5s
+								} else if (count < (textwidth+120)) {
+									left -= textwidth;
+									color       = (color       & 0x00FFFFFF) | ((((color      >>24)*(count-textwidth-90))/30)<<24); //fade-in in 0.5s
+									shadowColor = (shadowColor & 0x00FFFFFF) | ((((shadowColor>>24)*(count-textwidth-90))/30)<<24);
+								} else {
+									ux.f = left;     //reset counter
+									left -= textwidth;
+								}
+								break;
+
+							case INTRAFONT_SCROLL_THROUGH:  //scroll through
+								sceGuScissor(left-2, 0, left+column+4, 272); //limit to column width
+								if (count < (textwidth+column+30)) {
+									left += column+4-count; //scroll through
+								} else {
+									ux.f = left;     //reset counter
+									left += column+4;
+								}
+								break;
+
+						}
+						ux.i++;             //increase counter
+						x = ux.f;           //copy back to original var 
+						sceGuEnable(GU_SCISSOR_TEST);
 					}
-					if (text[j] == ' ') {                                        //space found for padding or eol
-						n_spaces++;
-						eol = j;
+				} else {					//automatic line-break required
+					n_spaces = -1;
+					eol = -1;
+					fill = 0.0f;
+					for (j = i; j < length; j++) {                                 
+						if (text[j] == '\n') {                                           //newline reached -> no auto-line-break
+							eol = j;
+							break;                                   
+						}
+						if (text[j] == ' ') {                                        //space found for padding or eol
+							n_spaces++;
+							eol = j;
+						}
+						if (intraFontMeasureTextUCS2Ex(font, text+i, j+1-i) > column) { //line too long -> line-break
+							if (eol < 0) eol = j;                                       //break in the middle of the word
+							if (n_spaces > 0) fill = (column-intraFontMeasureTextUCS2Ex(font, text+i, eol-i))/((float)n_spaces);
+							break;
+						}
 					}
-					if (intraFontMeasureTextUCS2Ex(font, text+i, j+1-i) > column) { //line too long -> line-break
-						if (eol < 0) eol = j;                                       //break in the middle of the word
-						if (n_spaces > 0) fill = (column-intraFontMeasureTextUCS2Ex(font, text+i, eol-i))/((float)n_spaces);
-						break;
+					if (j == length) {
+						eol = length;                                                 //last line
+						while ((text[eol-1] == ' ') && (eol > 1)) eol--;                  //do not display trailing spaces
 					}
+					
+					left = x;
+					if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_RIGHT)  left -= intraFontMeasureTextUCS2Ex(font, text+i,eol-i);
+					if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_CENTER) left -= intraFontMeasureTextUCS2Ex(font, text+i,eol-i)/2.0;
+
 				}
-				if (j == length) {
-					eol = length;                                                 //last line
-					while ((text[eol-1] == ' ') && (eol > 1)) eol--;                  //do not display trailing spaces
-				}
-			} else eol = length;                                                  //no column boundary -> display everything
-			
-			left = x;
-			if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_RIGHT)  left -= intraFontMeasureTextUCS2Ex(font, text+i,eol-i);
-			if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_CENTER) left -= intraFontMeasureTextUCS2Ex(font, text+i,eol-i)/2.0;
+			} else {  				//no column boundary -> display everything
+				left = x;
+				if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_RIGHT)  left -= intraFontMeasureTextUCS2Ex(font, text+i,length-i);
+				if ((font->options & PGF_ALIGN_MASK) == INTRAFONT_ALIGN_CENTER) left -= intraFontMeasureTextUCS2Ex(font, text+i,length-i)/2.0;
+			}
+
 			width = 0.0f;
 			height += font->advancey * glyphscale * 0.25;
+			
 		}
 
 		char_id = intraFontGetID(font,text[i]);
@@ -955,14 +1041,14 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 					v0->u = glyph->x-0.25f;
 					v0->v = glyph->y-0.25f;
-					v0->c = font->color;
+					v0->c = color;
 					v0->x = left + width + glyph->left*glyphscale;
 					v0->y = top + height - glyph->top *glyphscale;
 					v0->z = 0.0f;
 
 					v1->u = (glyph->x + glyph->width)+0.25f;
 					v1->v = (glyph->y + glyph->height)+0.25f;
-					v1->c = font->color;
+					v1->c = color;
 					v1->x = left + width + (glyph->width+glyph->left)*glyphscale;
 					v1->y = top + height + (glyph->height-glyph->top)*glyphscale;
 					v1->z = 0.0f;
@@ -980,14 +1066,14 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 				s0->u = shadowGlyph->x-0.25f;
 				s0->v = shadowGlyph->y-0.25f;
-				s0->c = font->shadowColor;
+				s0->c = shadowColor;
 				s0->x = left + width + shadowGlyph->left*glyphscale*64.0f/((float)font->shadowscale);
 				s0->y = top + height - shadowGlyph->top *glyphscale*64.0f/((float)font->shadowscale);
 				s0->z = 0.0f;
 
 				s1->u = (shadowGlyph->x + shadowGlyph->width)+0.25f;
 				s1->v = (shadowGlyph->y + shadowGlyph->height)+0.25f;
-				s1->c = font->shadowColor;
+				s1->c = shadowColor;
 				s1->x = left + width + (shadowGlyph->width+shadowGlyph->left)*glyphscale*64.0f/((float)font->shadowscale);
 				s1->y = top + height + (shadowGlyph->height-shadowGlyph->top)*glyphscale*64.0f/((float)font->shadowscale);
 				s1->z = 0.0f;
@@ -1016,7 +1102,12 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 	sceGuDrawArray(GU_SPRITES, GU_TEXTURE_32BITF|GU_COLOR_8888|GU_VERTEX_32BITF|GU_TRANSFORM_2D, (n_glyphs+n_sglyphs)<<1, 0, v);
 	sceGuEnable(GU_DEPTH_TEST);
 	
-	return left+width;
+	if (scroll == 1) {
+		sceGuScissor(0, 0, 480, 272); //reset window to whole screen (test was previously enabled)
+		return x;             //for scrolling return x-pos (including updated counter)
+	} else {
+		return left+width;    //otherwise return x-pos at end of text
+	}
 }
 
 float intraFontMeasureText(intraFont *font, const char *text) { 

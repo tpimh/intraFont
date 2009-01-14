@@ -1,6 +1,6 @@
 intraFont - A bitmap font library for PSP using the PSP's internal font (firmware pgf files)
 
-intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
+intraFont Version 0.25 by BenHur - http://www.psp-programming.com/benhur
 
 intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
 
@@ -68,6 +68,8 @@ If you don't need the codepage conversion: add -DINTRAFONT_NO_CP to the CFLAGS i
 
 -=Changelog=-
 
+0.25 - added text scrolling in intraFontPrintColumn() (flags INTRAFONT_SCROLL_LEFT/RIGHT/SEESAW/THROUGH)
+
 0.24 - added column printing with automatic linebreaks - no need to worry about overwriting  
        parts of the screen or printing outside the screen anymore (use intraFontPrintColumn()) 
      - added full justification (flush left&right) for column printing (flag INTRAFONT_ALIGN_FULL)
@@ -111,6 +113,9 @@ InsertWittyName: pgeFont
 CpuWhiz: "Hello World" in Japanese
 J.F.: intraFontMeasureText()
 psp-kaihatu-yotien: S-JIS to UCS-2 conversion
+NexTOS: UTF-8 support
+StrmnNrmn: bug fixes and optimizations
+
 
 -=License=-
 

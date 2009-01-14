@@ -1,7 +1,7 @@
 /*
  * fonttest.c
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.25 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -65,7 +65,7 @@ int main() {
 		BLACK = 0xFF000000,
 	};
     
-    pspDebugScreenPrintf("intraFont 0.24 - 2009 by BenHur\n\nLoading fonts: 0%%");
+    pspDebugScreenPrintf("intraFont 0.25 - 2009 by BenHur\n\nLoading fonts: 0%%");
         
     // Init intraFont library
     intraFontInit();
@@ -126,6 +126,7 @@ int main() {
 	sceDisplayWaitVblankStart();
 	sceGuDisplay(GU_TRUE);
 
+	float x_scroll1 = 80, x_scroll2 = 225, x_scroll3 = 370,  x_scroll4 = 390;
 	
 	while(running) 	{
 		sceGuStart(GU_DIRECT, list);
@@ -146,12 +147,12 @@ int main() {
 
 
         // Draw various text
-        float x,y = 25;
+        float x,y = 20;
 		intraFontSetStyle(ltn[4], 1.0f,BLACK,WHITE,INTRAFONT_ALIGN_CENTER);
-		intraFontPrint(ltn[4], 240, y, "intraFont 0.24 - 2009 by BenHur");
+		intraFontPrint(ltn[4], 240, y, "intraFont 0.25 - 2009 by BenHur");
         intraFontSetStyle(ltn[4], 1.0f,WHITE,BLACK,0);
 		        
-		y += 23;
+		y += 21;
 		intraFontPrint(ltn[8],  10, y, "Latin Sans-Serif:");
 		intraFontPrint(ltn[0], 180, y, "regular,");
         intraFontPrint(ltn[2], 270, y, "italic,");
@@ -179,7 +180,7 @@ int main() {
         intraFontPrint(ltn[13], 330, y, "bold,");
         intraFontPrint(ltn[15], 390, y, "both");
 		
-        y += 21;
+        y += 18;
 		intraFontSetEncoding(ltn[8], INTRAFONT_STRING_UTF8);   //set text string encoding to UTF-8
 		intraFontPrint(ltn[8], 10, y, "LTN (UTF-8):");         //(has no effect on std ascii)
 		intraFontPrint(ltn[8], 110, y, "\xC3\xA5 \xC3\xA8 \xC3\xAD \xC3\xB4 \xC3\xBC \xC3\xB1"); //UTF-8 encoded chars with accents on top of them
@@ -211,7 +212,7 @@ int main() {
         x = intraFontPrintUCS2(arib, 350, y, ucs2_arib);
 		if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
         
-        y += 21;
+        y += 18;
 		intraFontPrint(ltn[8], 10, y, "Colors: ");
         intraFontSetStyle(ltn[8], 1.0f,RED,BLUE,0);
 		x = intraFontPrint(ltn[8], 80, y, "colorful, ");
@@ -238,7 +239,7 @@ int main() {
         intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
         x = intraFontPrint(ltn[8], x, y, "variable width");
         
-        y += 23;
+        y += 22;
         intraFontPrint(ltn[8], 10, y, "Scaling: ");
 		intraFontSetStyle(ltn[0], 0.5f,WHITE,BLACK,0);
 		x = intraFontPrint(ltn[0], 80, y, "tiny, ");
@@ -266,6 +267,18 @@ int main() {
         intraFontPrintColumnEx(ltn[8], 370, y,  90, "right aligned with auto linebreaks ", length);
         intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_FULL);
         intraFontPrintColumnEx(ltn[8], 390, y,  80, "full justified with auto linebreaks", length);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
+
+		y += 40;
+        intraFontPrint(ltn[8], 10, y, "Scrolling: ");
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_LEFT);
+		x_scroll1 = intraFontPrintColumn(ltn[8], x_scroll1, y, 80, "This text is scrolled to the left.");
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_SEESAW);
+        x_scroll2 = intraFontPrintColumn(ltn[8], x_scroll2, y, 90, "Back & forth like a seesaw.");
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_RIGHT);
+		x_scroll3 = intraFontPrintColumn(ltn[8], x_scroll3, y, 80, "Scrolling to the right...");
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_THROUGH);
+        x_scroll4 = intraFontPrintColumn(ltn[8], x_scroll4, y, 80, "This text is scrolled through.");
 		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
 
         

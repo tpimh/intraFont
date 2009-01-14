@@ -1,7 +1,7 @@
 /*
  * intraFont.h
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.24 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.25 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -21,30 +21,35 @@ extern "C" {
  *  @{
  */
 
-#define INTRAFONT_ADVANCE_H     0x00000000 //default: advance horizontaly from one char to the next
-#define INTRAFONT_ADVANCE_V     0x00000100
-#define INTRAFONT_ALIGN_LEFT    0x00000000 //default: left-align the text
-#define INTRAFONT_ALIGN_CENTER  0x00000200
-#define INTRAFONT_ALIGN_RIGHT   0x00000400
-#define INTRAFONT_ALIGN_FULL    0x00000600 //full justify text to width set by intraFontSetTextWidth()
-#define INTRAFONT_WIDTH_VAR     0x00000000 //default: variable-width
-#define INTRAFONT_WIDTH_FIX     0x00000800 //set your custom fixed witdh to 24 pixels: INTRAFONT_WIDTH_FIX | 24 
-                                           //(max is 255, set to 0 to use default fixed width, this width will be scaled by size)
-#define INTRAFONT_ACTIVE        0x00001000 //assumes the font-texture resides inside sceGuTex already, prevents unecessary reloading -> very small speed-gain									   
-#define INTRAFONT_CACHE_MED     0x00000000 //default: 256x256 texture (enough to cache about 100 chars)
-#define INTRAFONT_CACHE_LARGE   0x00004000 //512x512 texture(enough to cache all chars of ltn0.pgf or ... or ltn15.pgf or kr0.pgf)
-#define INTRAFONT_CACHE_ASCII   0x00008000 //try to cache all ASCII chars during fontload (uses less memory and is faster to draw text, but slower to load font)
-                                           //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a medium texture
-									       //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
-#define INTRAFONT_CACHE_ALL     0x0000C000 //try to cache all chars during fontload (uses less memory and is faster to draw text, but slower to load font)
-                                           //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a large texture
-								    	   //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
-#define INTRAFONT_STRING_ASCII  0x00000000 //default: interpret strings as ascii text (ISO/IEC 8859-1)
-#define INTRAFONT_STRING_UTF8   0x00010000 //interpret strings as UTF-8
-#define INTRAFONT_STRING_SJIS   0x00020000 //interpret strings as shifted-jis (used for japanese)
-#define INTRAFONT_STRING_CP437  0x00030000 //interpret strings as ascii text (codepage 437)
-#define INTRAFONT_STRING_CP850  0x00040000 //interpret strings as ascii text (codepage 850)
-#define INTRAFONT_STRING_CP1252 0x00050000 //interpret strings as ascii text (codepage windows-1252)
+#define INTRAFONT_ADVANCE_H        0x00000000 //default: advance horizontaly from one char to the next
+#define INTRAFONT_ADVANCE_V        0x00000100
+#define INTRAFONT_ALIGN_LEFT       0x00000000 //default: left-align the text
+#define INTRAFONT_ALIGN_CENTER     0x00000200
+#define INTRAFONT_ALIGN_RIGHT      0x00000400
+#define INTRAFONT_ALIGN_FULL       0x00000600 //full justify text to width set by intraFontSetTextWidth()
+#define INTRAFONT_SCROLL_LEFT      0x00002000 //in intraFontPrintColumn if text does not fit text is scrolled to the left 
+	                                          //(requires redrawing at ~60 FPS with x position returned by previous call to intraFontPrintColumn())
+#define INTRAFONT_SCROLL_SEESAW    0x00002200 //in intraFontPrintColumn if text does not fit text is scrolled left and right
+#define INTRAFONT_SCROLL_RIGHT     0x00002400 //in intraFontPrintColumn if text does not fit text is scrolled to the right
+#define INTRAFONT_SCROLL_THROUGH   0x00002600 //in intraFontPrintColumn if text does not fit text is scrolled through (to the left)
+#define INTRAFONT_WIDTH_VAR        0x00000000 //default: variable-width
+#define INTRAFONT_WIDTH_FIX        0x00000800 //set your custom fixed witdh to 24 pixels: INTRAFONT_WIDTH_FIX | 24 
+                                              //(max is 255, set to 0 to use default fixed width, this width will be scaled by size)
+#define INTRAFONT_ACTIVE           0x00001000 //assumes the font-texture resides inside sceGuTex already, prevents unecessary reloading -> very small speed-gain									   
+#define INTRAFONT_CACHE_MED        0x00000000 //default: 256x256 texture (enough to cache about 100 chars)
+#define INTRAFONT_CACHE_LARGE      0x00004000 //512x512 texture(enough to cache all chars of ltn0.pgf or ... or ltn15.pgf or kr0.pgf)
+#define INTRAFONT_CACHE_ASCII      0x00008000 //try to cache all ASCII chars during fontload (uses less memory and is faster to draw text, but slower to load font)
+                                              //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a medium texture
+								              //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
+#define INTRAFONT_CACHE_ALL        0x0000C000 //try to cache all chars during fontload (uses less memory and is faster to draw text, but slower to load font)
+                                              //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a large texture
+								        	  //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
+#define INTRAFONT_STRING_ASCII     0x00000000 //default: interpret strings as ascii text (ISO/IEC 8859-1)
+#define INTRAFONT_STRING_UTF8      0x00010000 //interpret strings as UTF-8
+#define INTRAFONT_STRING_SJIS      0x00020000 //interpret strings as shifted-jis (used for japanese)
+#define INTRAFONT_STRING_CP437     0x00030000 //interpret strings as ascii text (codepage 437)
+#define INTRAFONT_STRING_CP850     0x00040000 //interpret strings as ascii text (codepage 850)
+#define INTRAFONT_STRING_CP1252    0x00050000 //interpret strings as ascii text (codepage windows-1252)
 
 /** @note The following definitions are used internally by ::intraFont and have no other relevance.*/
 #define PGF_BMP_H_ROWS    0x01
@@ -57,8 +62,9 @@ extern "C" {
 #define PGF_SHADOWGLYPH   0x40 //warning: this flag is not contained in the metric header flags and is only provided for simpler call to intraFontGetGlyph - ONLY check with (flags & PGF_CHARGLYPH)
 #define PGF_CACHED        0x80
 #define PGF_WIDTH_MASK    0x000000FF
-#define PGF_OPTIONS_MASK  0x00001FFF
+#define PGF_OPTIONS_MASK  0x00003FFF
 #define PGF_ALIGN_MASK    0x00000600
+#define PGF_SCROLL_MASK   0x00002600
 #define PGF_CACHE_MASK    0x0000C000
 #define PGF_STRING_MASK   0x000F0000
 
