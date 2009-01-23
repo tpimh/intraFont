@@ -1,7 +1,7 @@
 /*
  * fonttest.c
  * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.25 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.26 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -62,7 +62,7 @@ int main() {
 		BLACK = 0xFF000000,
 	};
     
-    pspDebugScreenPrintf("intraFont 0.25 - 2009 by BenHur\n\nLoading fonts: 0%%");
+    pspDebugScreenPrintf("intraFont 0.26 - 2009 by BenHur\n\nLoading fonts: 0%%");
         
     // Init intraFont library
     intraFontInit();
@@ -108,7 +108,7 @@ int main() {
 		// Draw various text
         float x,y = 20;
 		intraFontSetStyle(ltn[4], 1.0f,BLACK,WHITE,INTRAFONT_ALIGN_CENTER);
-		intraFontPrint(ltn[4], 240, y, "intraFont 0.25 - 2009 by BenHur");
+		intraFontPrint(ltn[4], 240, y, "intraFont 0.26 - 2009 by BenHur");
         intraFontSetStyle(ltn[4], 1.0f,WHITE,BLACK,0);
 		        
 		y += 21;
