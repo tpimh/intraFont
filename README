@@ -1,36 +1,35 @@
-intraFont - A bitmap font library for PSP using the PSP's internal font (firmware pgf files)
+intraFont - A bitmap font library for PSP using the PSP's internal font (firmware pgf and bwfon files)
 
-intraFont Version 0.26 by BenHur - http://www.psp-programming.com/benhur
+intraFont Version 0.30 by BenHur - http://www.psp-programming.com/benhur
 
 intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
 
 -=Info=-
 
-The library loads a pgf font from firmware and generates a 4-bit paletted bitmap font texture on
-the fly when drawing text. It caches previously drawn characters and is accurate to 1/4 pixel.
+The library loads a pgf or bwfon font from firmware and generates a 4-bit paletted bitmap font texture 
+on the fly when drawing text. It caches previously drawn characters and is accurate to 1/4 pixel.
 
-As of version 0.22 intraFont supports regular, italic and/or bold Latin, Japanese, Korean and
-symbol fonts: flash0:/font/ltn0.pgf, ltn1.pgf, ..., ltn15.pgf, jpn0.pgf, kr0.pgf and arib.pgf
+intraFont 0.30 supports regular, italic and/or bold Latin, Japanese, Korean, symbol and Chinese fonts: 
+flash0:/font/ltn0.pgf, ltn1.pgf, ..., ltn15.pgf, jpn0.pgf, kr0.pgf, arib.pgf and gb3s1518.bwfon 
 (kr0.pgf and arib.pgf might be missing/replaced by a dummy file depending on the CFW).
 
 Known issues:
 - if more than 100 different characters are drawn on the same screen (i.e. before the next
   sceGuSync statement) using a medium size cache (default), graphical glitches might appear.
   Workaround: use a larger cache size (INTRAFONT_CACHE_LARGE or INTRAFONT_CACHE_ALL)
+- if you're using the graphics library then you may need to reset the sceGuTex* states to what
+  they are defaulted to in the initGraphics() functions, after using the intraFont* functions
 
 -=Samples=-
 
 There are two samples included, one for raw GU and the other using the graphics library from
 Yeldarb's tutorials on psp-programming.com
 
-If you're using the graphics library then you may need to reset the sceGuTex* states to what
-they are defaulted to in the initGraphics() functions, after using the intraFont* functions.
-
 It should be easy enough to add to any other library.
 
 -=Dependencies=-
 
-none (i.e. freetype is NOT required)
+libccc (included in the package)
 
 -=Performance=-
 
@@ -55,18 +54,29 @@ ltn8-15 ¦   36ms,   83kB, 4.1kCPS   ¦   36ms,  179kB, 4.1kCPS ¦  54ms, 20kB, 100
 jpn0    ¦ 1020ms, 1763kB, 0.5kCPS   ¦ 1020ms, 1859kB, 0.5kCPS ¦ 997ms, 33kB, 100kCPS  ¦   - too many glyphs -
 kr0     ¦  350ms,  625kB, 0.6kCPS   ¦  350ms,  721kB, 0.6kCPS ¦  - no ASCII glyphs -  ¦ 1936ms, 440kB, 67kCPS(**)
 arib    ¦  177ms,  266kB, 1.9kCPS   ¦  177ms,  362kB, 1.9kCPS ¦  - no ASCII glyphs -  ¦   - too many glyphs -
---------------------------------------------------------------------------------------+--------------------------
+--------+---------------------------+-------------------------+-----------------------+--------------------------
 
 (*)  Low speeds (<10kCPS) occur when characters are not cached. Printing the same characters a
      second time results in 100 kCPS, i.e. the speed penalty is gone.
 (**) kr0 is slower because one character can consist of up to three glyphs.
 
-If you don't need the S-JIS string parsing: add -DINTRAFONT_NO_SJIS to the CFLAGS in your makefile
-(this excludes the conversion table and saves around 18kB).
-If you don't need the codepage conversion: add -DINTRAFONT_NO_CP to the CFLAGS in your makefile
-(this excludes the conversion table and saves around 1.5kB).
+If you don't need the codepage conversion (S-JIS, GBK, KOR, Big5, ...): add -DLIBCCC_NO_CP to the CFLAGS 
+in your makefile (this excludes the conversion table and saves around 140kB). To exclude individual
+conversion tables use -DLIBCCC_NO_CPxxx, where xxx is the codepage number to be excluded.
 
 -=Changelog=-
+
+0.30 - added support for Chinese (gb3s1518.bwfon): now all of the PSPs internal fonts are supported!
+       (thanks to Tong for his help)
+     - added libccc (my Character Code Conversion library) for string parsing/conversion:
+       * it currrently supports decoding of UTF-8 and the following codepages: 
+         CP437 (US), CP850 (Multilingual Latin I), CP866 (Russian), CP932 (Japanese Shift-JIS), 
+         CP936 (Simplified Chinese GBK), CP949 (Korean), CP950 (Traditional Chinese Big5), 
+         CP1251 (Cyrillic) and CP1252 (Latin I)
+       * it's required by intraFont 0.30+ (simply add libccc.o to the OBJS list in your makefile)
+       * if you don't need any codepages: add -DLIBCCC_NO_CP to the CFLAGS in your makefile, which 
+         saves around 140kB of size/memory.
+       * finally, it can be used independantly from intraFont for your own character conversion needs
 
 0.26 - bug fixed where text could be mis-aligned after newline character (thanks to Slasher)
      - bug fixed in multi-byte string parsing (thanks to xart)
@@ -120,7 +130,7 @@ psp-kaihatu-yotien: S-JIS to UCS-2 conversion
 NexTOS: UTF-8 support
 StrmnNrmn: bug fixes and optimizations
 Slasher and xart: bug reports
-
+Tong: unicode mapping of gb3s1518.bwfon
 
 -=License=-
 

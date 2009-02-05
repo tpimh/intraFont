@@ -1,5 +1,5 @@
 TARGET = intraFontTest
-OBJS = fonttest.o ../../intraFont.o
+OBJS = fonttest.o ../../intraFont.o ../../libccc.o
 
 INCDIR =
 CFLAGS = -O2 -G0 -Wall -g

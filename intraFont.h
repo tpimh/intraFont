@@ -1,7 +1,7 @@
 /*
  * intraFont.h
- * This file is used to display the PSP's internal font (pgf firmware files)
- * intraFont Version 0.26 by BenHur - http://www.psp-programming.com/benhur
+ * This file is used to display the PSP's internal font (pgf and bwfon firmware files)
+ * intraFont Version 0.30 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -16,6 +16,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "libccc.h"
 
 /** @defgroup intraFont Font Library
  *  @{
@@ -44,14 +46,21 @@ extern "C" {
 #define INTRAFONT_CACHE_ALL        0x0000C000 //try to cache all chars during fontload (uses less memory and is faster to draw text, but slower to load font)
                                               //if it fails: (because the cache is too small) it will automatically switch to chache on-the-fly with a large texture
 								        	  //if it succeeds: (all chars and shadows fit into chache) it will free some now unneeded memory
-#define INTRAFONT_STRING_ASCII     0x00000000 //default: interpret strings as ascii text (ISO/IEC 8859-1)
-#define INTRAFONT_STRING_UTF8      0x00010000 //interpret strings as UTF-8
-#define INTRAFONT_STRING_SJIS      0x00020000 //interpret strings as shifted-jis (used for japanese)
-#define INTRAFONT_STRING_CP437     0x00030000 //interpret strings as ascii text (codepage 437)
-#define INTRAFONT_STRING_CP850     0x00040000 //interpret strings as ascii text (codepage 850)
-#define INTRAFONT_STRING_CP1252    0x00050000 //interpret strings as ascii text (codepage windows-1252)
+#define INTRAFONT_STRING_ASCII     (0x00010000*CCC_CP000)  //default: interpret strings as ascii text (ISO/IEC 8859-1)
+#define INTRAFONT_STRING_CP437     (0x00010000*CCC_CP437)  //interpret strings as ascii text (codepage 437)
+#define INTRAFONT_STRING_CP850     (0x00010000*CCC_CP850)  //interpret strings as ascii text (codepage 850)
+#define INTRAFONT_STRING_CP866     (0x00010000*CCC_CP866)  //interpret strings as ascii text (codepage 866)
+#define INTRAFONT_STRING_SJIS      (0x00010000*CCC_CP932)  //interpret strings as shifted-jis (used for japanese)
+#define INTRAFONT_STRING_GBK       (0x00010000*CCC_CP936)  //interpret strings as GBK (used for simplified chinese)
+#define INTRAFONT_STRING_KOR       (0x00010000*CCC_CP949)  //interpret strings as Korean codepage 949
+#define INTRAFONT_STRING_BIG5      (0x00010000*CCC_CP950)  //interpret strings as BIG5 (used for traditional chinese)
+#define INTRAFONT_STRING_CP1251    (0x00010000*CCC_CP1251) //interpret strings as ascii text (codepage windows-1251)
+#define INTRAFONT_STRING_CP1252    (0x00010000*CCC_CP1252) //interpret strings as ascii text (codepage windows-1252)
+#define INTRAFONT_STRING_UTF8      (0x00010000*CCC_CPUTF8) //interpret strings as UTF-8
 
 /** @note The following definitions are used internally by ::intraFont and have no other relevance.*/
+#define FILETYPE_PGF      0x00
+#define FILETYPE_BWFON    0x01
 #define PGF_BMP_H_ROWS    0x01
 #define PGF_BMP_V_ROWS    0x02
 #define PGF_BMP_OVERLAY   0x03
@@ -66,7 +75,7 @@ extern "C" {
 #define PGF_ALIGN_MASK    0x00000600
 #define PGF_SCROLL_MASK   0x00002600
 #define PGF_CACHE_MASK    0x0000C000
-#define PGF_STRING_MASK   0x000F0000
+#define PGF_STRING_MASK   0x00FF0000
 
 
 /**
@@ -86,6 +95,12 @@ typedef struct {
 	char advance;             //in quarterpixels
 	unsigned long ptr;        //offset 
 } Glyph;
+
+typedef struct {
+	unsigned short x;         //in pixels
+	unsigned short y;         //in pixels
+	unsigned char flags;
+} GlyphBW;
 
 /**
  * A PGF_Header struct
@@ -128,6 +143,7 @@ typedef struct {
  */
 typedef struct {
 	char *filename;
+	unsigned char fileType; /**<  FILETYPE_PGF or FILETYPE_BWFON  */
 	unsigned char *fontdata;
 	
 	unsigned char *texture; /**<  The bitmap data  */
@@ -144,10 +160,11 @@ typedef struct {
 	unsigned short *charmap_compr; /**< Compression info on compressed charmap*/	
 	unsigned short *charmap; /**<  Character map */	
 	Glyph* glyph; /**<  Character glyphs */
+	GlyphBW* glyphBW;
 		
 	unsigned short n_shadows;
 	unsigned char shadowscale; /**<  shadows in pgf file (width, height, left and top properties as well) are scaled by factor of (shadowscale>>6) */	
-	Glyph* shadowGlyph; /**<  Shadow glyphs */	
+	Glyph* shadowGlyph; /**<  Shadow glyph(s) */	
 	
 	float size;
 	unsigned int color;
