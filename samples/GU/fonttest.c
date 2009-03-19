@@ -1,7 +1,7 @@
 /*
  * fonttest.c
  * This file is used to display the PSP's internal font (pgf and bwfon firmware files)
- * intraFont Version 0.30 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.31 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -13,7 +13,6 @@
 #include <pspkernel.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <pspgu.h>
 #include <pspgum.h>
 #include <pspdisplay.h>
@@ -65,7 +64,7 @@ int main() {
 		BLACK = 0xFF000000,
 	};
     
-    pspDebugScreenPrintf("intraFont 0.30 - 2009 by BenHur\n\nLoading fonts: 0%%");
+    pspDebugScreenPrintf("intraFont 0.31 - 2009 by BenHur\n\nLoading fonts: 0%%");
         
     // Init intraFont library
     intraFontInit();
@@ -77,12 +76,13 @@ int main() {
     for (i = 0; i < 16; i++) {
         sprintf(file, "flash0:/font/ltn%d.pgf", i); 
         ltn[i] = intraFontLoad(file,0);                                             //<- this is where the actual loading happens 
+		intraFontSetStyle(ltn[i], 1.0f, WHITE, DARKGRAY, 0);
 		pspDebugScreenSetXY(15,2);
         pspDebugScreenPrintf("%d%%",(i+1)*100/20);
     }
 
     intraFont* jpn0 = intraFontLoad("flash0:/font/jpn0.pgf",INTRAFONT_STRING_SJIS); //japanese font with SJIS text string encoding
-	intraFontSetStyle(jpn0, 0.8f, WHITE, BLACK, 0);                                 //scale to 80%
+	intraFontSetStyle(jpn0, 0.8f, WHITE, DARKGRAY, 0);                              //scale to 80%
     pspDebugScreenSetXY(15,2);
     pspDebugScreenPrintf("%d%%",17*100/20);
         
@@ -92,6 +92,7 @@ int main() {
     pspDebugScreenPrintf("%d%%",18*100/20);
            
 	intraFont* arib = intraFontLoad("flash0:/font/arib.pgf",0);                     //Symbols (not available on all systems)
+	intraFontSetStyle(arib, 0.8f, WHITE, DARKGRAY, 0);                              //scale to 80%
 	pspDebugScreenSetXY(15,2);
     pspDebugScreenPrintf("%d%%",19*100/20);
 
@@ -102,6 +103,14 @@ int main() {
 
 	// Make sure the important fonts for this application are loaded
 	if(!ltn[0] || !ltn[4] || !ltn[8]) sceKernelExitGame();
+
+	// Set alternative fonts that are used in case a certain char does not exist in the main font
+	intraFontSetAltFont(ltn[8], jpn0);                     //japanese font is used for chars that don't exist in latin
+	intraFontSetAltFont(jpn0, chn);                        //chinese font (bwfon) is used for chars that don't exist in japanese (and latin)
+	intraFontSetAltFont(chn, kr0);                         //korean font is used for chars that don't exist in chinese (and jap and ltn)
+	intraFontSetAltFont(kr0, arib);                        //symbol font is used for chars that don't exist in korean (and chn, jap & ltn)
+	// NB: This is an extreme case - usually you need only one alternative font (e.g. japanese & chinese)
+	// Also: if one of the fonts failed to load (e.g. chn) the chain breaks and all subequent fonts are not used (e.g. kr0 and arib)
 	
 	// Init GU    
     sceGuInit();
@@ -152,8 +161,8 @@ int main() {
         // Draw various text
         float x,y = 20;
 		intraFontSetStyle(ltn[4], 1.0f,BLACK,WHITE,INTRAFONT_ALIGN_CENTER);
-		intraFontPrint(ltn[4], 240, y, "intraFont 0.30 - 2009 by BenHur");
-        intraFontSetStyle(ltn[4], 1.0f,WHITE,BLACK,0);
+		intraFontPrint(ltn[4], 240, y, "intraFont 0.31 - 2009 by BenHur");
+        intraFontSetStyle(ltn[4], 1.0f,WHITE,DARKGRAY,0);
 		        
 		y += 21;
 		intraFontPrint(ltn[8],  10, y, "Latin Sans-Serif:");
@@ -187,10 +196,11 @@ int main() {
 		intraFontSetEncoding(ltn[8], INTRAFONT_STRING_UTF8);   //set text string encoding to UTF-8
 		intraFontPrint(ltn[8], 10, y, "LTN (UTF8):");          //(has no effect on std ascii)
 		intraFontPrint(ltn[8], 110, y, "\xC3\xA5 \xC3\xA8 \xC3\xAD \xC3\xB4 \xC3\xBC \xC3\xB1"); //UTF-8 encoded chars with accents on top of them
-		intraFontSetEncoding(ltn[8], INTRAFONT_STRING_CP437);  //switch to codepage 437 encoding for extended ascii
-		intraFontPrint(ltn[8], 250, y, "LTN (CP437):");        //(has no effect on std ascii)
-		intraFontPrint(ltn[8], 350, y, "\x86 \x8A \xA1 \x93 \x81 \xA4"); //the same chars as above using codepage 437 encoding
-		intraFontSetEncoding(ltn[8], INTRAFONT_STRING_ASCII);  //set encoding back to ASCII (default)
+		
+		intraFontPrint(ltn[8], 250, y, "Symbols: ");
+        unsigned short ucs2_arib[] = { 57786, 57787, 57788, 57789, 57790, 0 };
+        x = intraFontPrintUCS2(arib, 350, y, ucs2_arib);
+		if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
 
 		y += 17;
         intraFontPrint(ltn[8], 10, y, "JPN (UTF8):");
@@ -204,18 +214,7 @@ int main() {
         x = intraFontPrint(jpn0, 350, y, "イントラフォント");  //S-JIS encoded text string (flag INTRAFONT_STRING_SJIS set in intraFontLoad call)
 		if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
 
-		y += 17;   
-		intraFontPrint(ltn[8], 10, y, "KOR (UTF8):");
-		char utf8_kr[] = {0xed, 0x99, 0x98, 0xec, 0x98, 0x81, 0x20, 0xeb, 0x8c, 0x80, 0xed, 0x95, 0x9c, 0xeb, 0xaf, 0xbc, 0xea, 0xb5, 0xad, 0};
-        x = intraFontPrint(kr0, 110, y, utf8_kr);              //print UTF-8 string (flag INTRAFONT_STRING_UTF8 set in intraFontLoad call)
-		if (x == 110) intraFontPrint(ltn[8], 110, y, "[n/a]");
-		
-        intraFontPrint(ltn[8], 250, y, "Symbols: ");
-        unsigned short ucs2_arib[] = { 57786, 57787, 57788, 57789, 57790, 0 };
-        x = intraFontPrintUCS2(arib, 350, y, ucs2_arib);
-		if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
-		        
-        y += 17;
+		y += 17;
 		intraFontPrint(ltn[8], 10, y, "CHN (GBK):");
         char gbk_chn[] = { 0xbc,0xf2, 0xcc,0xe5, 0xd6,0xd0, 0xce,0xc4, 0};
         intraFontSetEncoding(chn, INTRAFONT_STRING_GBK);
@@ -227,15 +226,26 @@ int main() {
         x = intraFontPrint(chn, 350, y, big5_chn);             //print BIG5-encoded string (trad. chinese)
 		if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
 
+		y += 17;   
+		intraFontPrint(ltn[8], 10, y, "KOR (UTF8):");
+		char utf8_kr[] = {0xed, 0x99, 0x98, 0xec, 0x98, 0x81, 0x20, 0xeb, 0x8c, 0x80, 0xed, 0x95, 0x9c, 0xeb, 0xaf, 0xbc, 0xea, 0xb5, 0xad, 0};
+        x = intraFontPrint(kr0, 110, y, utf8_kr);              //print UTF-8 string (flag INTRAFONT_STRING_UTF8 set in intraFontLoad call)
+		if (x == 110) intraFontPrint(ltn[8], 110, y, "[n/a]");
+
+		intraFontPrint(ltn[8], 250, y, "MIX (UCS2):");
+		unsigned short ucs2_all[] = { 0x0041, 0x0192, 0x3401, 0x3402, 0x4E01, 0x4E02, 0xAC01, 0xAC02, 0xE1BE, 0};
+        x = intraFontPrintUCS2(ltn[8], 350, y, ucs2_all);      //print chars from all fonts (using alternative fonts, which were set after font loading)
+		
+
         y += 17;
 		intraFontPrint(ltn[8], 10, y, "Colors: ");
         intraFontSetStyle(ltn[8], 1.0f,RED,BLUE,0);
 		x = intraFontPrint(ltn[8], 80, y, "colorful, ");
         intraFontSetStyle(ltn[8], 1.0f,WHITE,0,0);
         x = intraFontPrint(ltn[8], x, y, "no shadow, ");
-        intraFontSetStyle(ltn[8], 1.0f,0,BLACK,0);
+        intraFontSetStyle(ltn[8], 1.0f,0,DARKGRAY,0);
         x = intraFontPrint(ltn[8], x, y, "no text, ");
-        intraFontSetStyle(ltn[8], 1.0f,0x7FFFFFFF,BLACK,0);
+        intraFontSetStyle(ltn[8], 1.0f,0x7FFFFFFF,DARKGRAY,0);
         x = intraFontPrint(ltn[8], x, y, "transparent, ");		
         intraFontSetStyle(ltn[8], 1.0f,GRAY,WHITE,0);
         x = intraFontPrint(ltn[8], x, y, "glowing, ");
@@ -243,58 +253,58 @@ int main() {
 		int val = (t < 0.5f) ? t*511 : (1.0f-t)*511;
 		intraFontSetStyle(ltn[8], 1.0f,LITEGRAY,(0xFF<<24)+(val<<16)+(val<<8)+(val),0);
 		x = intraFontPrint(ltn[8], x, y, "flashing");
-        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,0);
         
         y += 17;
         intraFontPrint(ltn[8], 10, y, "Spacing: ");
-		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_WIDTH_FIX);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_WIDTH_FIX);
 		x = intraFontPrint(ltn[8], 80, y, "fixed (default), ");
-        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_WIDTH_FIX | 12);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_WIDTH_FIX | 12);
         x = intraFontPrint(ltn[8], x, y, "fixed (12), ");		
-        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,0);
         x = intraFontPrint(ltn[8], x, y, "variable width");
         
         y += 22;
         intraFontPrint(ltn[8], 10, y, "Scaling: ");
-		intraFontSetStyle(ltn[0], 0.5f,WHITE,BLACK,0);
+		intraFontSetStyle(ltn[0], 0.5f,WHITE,DARKGRAY,0);
 		x = intraFontPrint(ltn[0], 80, y, "tiny, ");
-        intraFontSetStyle(ltn[0], 0.75f,WHITE,BLACK,0);
+        intraFontSetStyle(ltn[0], 0.75f,WHITE,DARKGRAY,0);
 		x = intraFontPrint(ltn[0], x, y, "small, ");
-        intraFontSetStyle(ltn[0], 1.0f,WHITE,BLACK,0);
+        intraFontSetStyle(ltn[0], 1.0f,WHITE,DARKGRAY,0);
 		x = intraFontPrint(ltn[0], x, y, "regular, ");
-        intraFontSetStyle(ltn[0], 1.25f,WHITE,BLACK,0);
+        intraFontSetStyle(ltn[0], 1.25f,WHITE,DARKGRAY,0);
 		x = intraFontPrint(ltn[0], x, y, "large, ");
-        intraFontSetStyle(ltn[0], 1.5f,WHITE,BLACK,0);
+        intraFontSetStyle(ltn[0], 1.5f,WHITE,DARKGRAY,0);
 		x = intraFontPrint(ltn[0], x, y, "huge"); 
-		intraFontSetStyle(ltn[0], 1.0f,WHITE,BLACK,0);
+		intraFontSetStyle(ltn[0], 1.0f,WHITE,DARKGRAY,0);
 		
         y += 17;
         intraFontPrint(ltn[8], 10, y, "Align: ");
-		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_LEFT);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_ALIGN_LEFT);
 		t = ((float)(clock() % (CLOCKS_PER_SEC*10))) / ((float)CLOCKS_PER_SEC);
 		int length = (t < 5.0f) ? t*5.8f : (10.0f-t)*5.8f;
 		intraFontPrintColumnEx(ltn[8],  80, y,  90, "left aligned w. linebreaks  ", length);
 		//NB: intraFontPrintColumnEx() is used to print a sub-string of a given length (last parameter)
 		//    if you want to print the whole string, simply use intraFontPrintColumn() and omit the length parameter
-		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_CENTER);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_ALIGN_CENTER);
 		intraFontPrintColumnEx(ltn[8], 225, y, 110, "center aligned w. linebreaks", length);
-        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_RIGHT);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_ALIGN_RIGHT);
         intraFontPrintColumnEx(ltn[8], 370, y,  90, "right aligned w. linebreaks ", length);
-        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_ALIGN_FULL);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_ALIGN_FULL);
         intraFontPrintColumnEx(ltn[8], 380, y,  90, "full justified w. linebreaks", length);
-		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,0);
 
 		y += 28;
         intraFontPrint(ltn[8], 10, y, "Scrolling: ");
-		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_LEFT);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_SCROLL_LEFT);
 		x_scroll1 = intraFontPrintColumn(ltn[8], x_scroll1, y, 80, "This text is scrolled to the left.");
-        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_SEESAW);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_SCROLL_SEESAW);
         x_scroll2 = intraFontPrintColumn(ltn[8], x_scroll2, y, 90, "Back & forth like a seesaw.");
-		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_RIGHT);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_SCROLL_RIGHT);
 		x_scroll3 = intraFontPrintColumn(ltn[8], x_scroll3, y, 80, "Scrolling to the right...");
-        intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,INTRAFONT_SCROLL_THROUGH);
+        intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,INTRAFONT_SCROLL_THROUGH);
         x_scroll4 = intraFontPrintColumn(ltn[8], x_scroll4, y, 80, "This text is scrolled through.");
-		intraFontSetStyle(ltn[8], 1.0f,WHITE,BLACK,0);
+		intraFontSetStyle(ltn[8], 1.0f,WHITE,DARKGRAY,0);
         
         // End drawing
 		sceGuFinish();

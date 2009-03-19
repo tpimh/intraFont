@@ -1,7 +1,7 @@
 /*
  * intraFont.h
  * This file is used to display the PSP's internal font (pgf and bwfon firmware files)
- * intraFont Version 0.30 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.31 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -141,35 +141,37 @@ typedef struct {
 /**
  * A Font struct
  */
-typedef struct {
-	char *filename;
-	unsigned char fileType; /**<  FILETYPE_PGF or FILETYPE_BWFON  */
-	unsigned char *fontdata;
+typedef struct intraFont {
+	char* filename;
+	unsigned char fileType;          /**< FILETYPE_PGF or FILETYPE_BWFON */
+	unsigned char* fontdata;
 	
-	unsigned char *texture; /**<  The bitmap data  */
-	unsigned int texWidth; /**<  Texture size (power2) */
-	unsigned int texHeight; /**<  Texture height (power2) */	
+	unsigned char* texture;          /**< The bitmap data */
+	unsigned int texWidth;           /**< Texture size (power2) */
+	unsigned int texHeight;          /**< Texture height (power2) */	
 	unsigned short texX;
 	unsigned short texY;
 	unsigned short texYSize;
 	
 	unsigned short n_chars;
-	char advancex;            //in quarterpixels
-	char advancey;            //in quarterpixels
-	unsigned char charmap_compr_len; /**<length of compression info*/
-	unsigned short *charmap_compr; /**< Compression info on compressed charmap*/	
-	unsigned short *charmap; /**<  Character map */	
-	Glyph* glyph; /**<  Character glyphs */
+	char advancex;                   /**< in quarterpixels */
+	char advancey;                   /**< in quarterpixels */
+	unsigned char charmap_compr_len; /**< length of compression info */
+	unsigned short* charmap_compr;   /**< Compression info on compressed charmap */	
+	unsigned short* charmap;         /**< Character map */	
+	Glyph* glyph;                    /**< Character glyphs */
 	GlyphBW* glyphBW;
 		
 	unsigned short n_shadows;
-	unsigned char shadowscale; /**<  shadows in pgf file (width, height, left and top properties as well) are scaled by factor of (shadowscale>>6) */	
-	Glyph* shadowGlyph; /**<  Shadow glyph(s) */	
+	unsigned char shadowscale;       /**< shadows in pgf file (width, height, left and top properties as well) are scaled by factor of (shadowscale>>6) */	
+	Glyph* shadowGlyph;              /**<  Shadow glyph(s) */	
 	
 	float size;
 	unsigned int color;
 	unsigned int shadowColor;
 	unsigned int options;
+
+	struct intraFont* altFont;
 } intraFont;
 
 
@@ -233,6 +235,15 @@ void intraFontSetStyle(intraFont *font, float size, unsigned int color, unsigned
  * @param options - INTRAFONT_STRING_XXX flags as defined above except flags related to CACHE (ored together)
  */
 void intraFontSetEncoding(intraFont *font, unsigned int options);
+
+/**
+ * Set alternative font
+ *
+ * @param font - A valid ::intraFont
+ *
+ * @param altFont - A valid ::intraFont that's to be used if font does not contain a character
+ */
+void intraFontSetAltFont(intraFont *font, intraFont *altFont);
 
 /**
  * Draw UCS-2 encoded text along the baseline starting at x, y.

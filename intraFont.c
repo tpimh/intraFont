@@ -1,7 +1,7 @@
 /*
  * intraFont.c
  * This file is used to display the PSP's internal font (pgf and bwfon firmware files)
- * intraFont Version 0.30 by BenHur - http://www.psp-programming.com/benhur
+ * intraFont Version 0.31 by BenHur - http://www.psp-programming.com/benhur
  *
  * Uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
  *
@@ -14,11 +14,9 @@
 #include <pspgu.h>
 #include <pspgum.h>
 #include <pspdisplay.h>
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <malloc.h>
 
 #include "intraFont.h"
@@ -124,7 +122,23 @@ int intraFontGetBMP(intraFont *font, unsigned short id, unsigned char glyphtype)
 				for (yy = 0; yy < glyph->height; yy++) {
 					for (xx = 0; xx < glyph->width; xx++) {
 						if (glyphtype & PGF_CHARGLYPH) {
-							value = intraFontGetV(1,font->fontdata,&b) * 0x0b; //scale 1 bit/pix to 4 bit/pix
+							value = intraFontGetV(1,font->fontdata,&b) * 0x0f; //scale 1 bit/pix to 4 bit/pix
+							/* Simple anti-aliasing/blur for black pixels. Unfortunately, does not improve the result...
+							if ((value == 0) && (xx > 0) && (yy > 0) && (xx < (glyph->width-1)) && (yy < (glyph->height-1))) {
+								b -= 19;
+								value += intraFontGetV(1,font->fontdata,&b);
+								value += intraFontGetV(1,font->fontdata,&b);
+								value += intraFontGetV(1,font->fontdata,&b);
+								b += 13;
+								value += intraFontGetV(1,font->fontdata,&b);
+								value += intraFontGetV(1,font->fontdata,&b);
+								value += intraFontGetV(1,font->fontdata,&b);
+								b += 13;
+								value += intraFontGetV(1,font->fontdata,&b);
+								value += intraFontGetV(1,font->fontdata,&b);
+								value += intraFontGetV(1,font->fontdata,&b);
+								b -= 16;								
+							} */
 							if ((font->texX + (7-(xx&7)+(xx&248))) & 1) {
 								font->texture[((font->texX + (7-(xx&7)+(xx&248))) + (font->texY + yy) * font->texWidth)>>1] &= 0x0F;
 								font->texture[((font->texX + (7-(xx&7)+(xx&248))) + (font->texY + yy) * font->texWidth)>>1] |= (value<<4);
@@ -330,8 +344,8 @@ int intraFontPreCache(intraFont *font, unsigned int options) {
 
 intraFont* intraFontLoad(const char *filename, unsigned int options) {
     unsigned long i,j;
-	static Glyph bw_glyph                         = { 0, 0, 16, 18, 0, 14, PGF_BMP_H_ROWS, 0, 64, 0 };
-	static Glyph bw_shadowGlyph                   = { 0, 0,  8, 10, 0,  4, PGF_BMP_H_ROWS, 0, 64, 0 };
+	static Glyph bw_glyph                         = { 0, 0, 16, 18, 0, 15, PGF_BMP_H_ROWS, 0, 64, 0 };
+	static Glyph bw_shadowGlyph                   = { 0, 0,  8, 10, 0,  5, PGF_BMP_H_ROWS, 0, 64, 0 };
 	static const unsigned short bw_charmap_compr[]= { 0x00a4,  1, 0x00a7,  2, 0x00b0,  2, 0x00b7,  1, 0x00d7,  1, 0x00e0,  2, 0x00e8,  3, 0x00ec,  2,
 		                                              0x00f2,  2, 0x00f7,  1, 0x00f9,  2, 0x00fc,  1, 0x0101,  1, 0x0113,  1, 0x011b,  1, 0x012b,  1, 
 													  0x0144,  1, 0x0148,  1, 0x014d,  1, 0x016b,  1, 0x01ce,  1, 0x01d0,  1, 0x01d2,  1, 0x01d4,  1, 
@@ -438,6 +452,7 @@ intraFont* intraFontLoad(const char *filename, unsigned int options) {
     font->size = 1.0f;               //default size
     font->color = 0xFFFFFFFF;        //non-transparent white
     font->shadowColor = 0xFF000000;  //non-transparent black
+	font->altFont = NULL;            //no alternative font
 	font->filename = (char*)malloc((strlen(filename)+1)*sizeof(char));
 	font->texture = (unsigned char*)memalign(16,font->texWidth*font->texHeight>>1);
 	if (!font->filename || !font->texture) {
@@ -725,6 +740,17 @@ void intraFontSetEncoding(intraFont *font, unsigned int options) {
     if (!font) return;
 	font->options = (font->options & PGF_OPTIONS_MASK) | (options & PGF_STRING_MASK) | (font->options & PGF_CACHE_MASK);
 }
+
+void intraFontSetAltFont(intraFont *font, intraFont *altFont) {
+	if (!font) return;
+	intraFont* nextFont;
+	nextFont = altFont;
+	while (nextFont) { 
+		if ((nextFont->altFont) == font) return; //it must not point at itself
+		nextFont = nextFont->altFont;
+	}
+	font->altFont = altFont; 
+}	
 
 float intraFontPrintf(intraFont *font, float x, float y, const char *text, ...) {
 	if(!font) return x;
@@ -1110,8 +1136,14 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 			
 			if ((text[i] == 32) && ((font->options & INTRAFONT_ALIGN_FULL) == INTRAFONT_ALIGN_FULL)) width += fill;
 			
-		} 		
-
+		} else {
+			if (font->altFont) {
+				unsigned int altOptions = (font->altFont)->options;
+				(font->altFont)->options = altOptions & (PGF_WIDTH_MASK+PGF_CACHE_MASK);
+				width += intraFontPrintColumnUCS2Ex(font->altFont, left+width, top+height, 0.0f, text+i, 1) - (left+width);
+				(font->altFont)->options = altOptions;
+			}
+		}
 	}
 		
 	//finalize and activate texture (if not already active or has been changed)
@@ -1144,9 +1176,7 @@ float intraFontMeasureTextEx(intraFont *font, const char *text, int length) {
 } 
 
 float intraFontMeasureTextUCS2(intraFont *font, const cccUCS2 *text) { 
-	if (!font) return 0;
-	int length = cccStrlenCode((cccCode*)text, font->options/0x00010000);
-	return intraFontMeasureTextUCS2Ex(font, text, length);
+	return intraFontMeasureTextUCS2Ex(font, text, cccStrlenUCS2(text));
 }
 
 float intraFontMeasureTextUCS2Ex(intraFont *font, const cccUCS2 *text, int length) { 
@@ -1160,6 +1190,8 @@ float intraFontMeasureTextUCS2Ex(intraFont *font, const cccUCS2 *text, int lengt
 		if (char_id < font->n_chars) {
 			unsigned short glyph_ptr = (font->fileType == FILETYPE_PGF) ? char_id : 0; //for fields not covered in GlyphBW (advance,...)
 			x += (font->options & INTRAFONT_WIDTH_FIX) ? (font->options & PGF_WIDTH_MASK)*font->size : (font->glyph[glyph_ptr].advance)*font->size*0.25f; 
+		} else {
+			x += intraFontMeasureTextUCS2Ex(font->altFont, text+i, 1); //try alternative font if char does not exist in current font
 		}
 	} 
 
