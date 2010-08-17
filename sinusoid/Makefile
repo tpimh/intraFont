@@ -1,5 +1,7 @@
 TARGET = intraFontTest
-OBJS = fonttest.o graphics.o framebuffer.o ../../libccc.o ../../intraFont.o
+OBJS = sinus.o\
+       ../libraries/graphics.o ../libraries/framebuffer.o\
+       ../libccc.o ../intraFont.o
 
 INCDIR =
 CFLAGS = -O2 -G0 -Wall -g
@@ -11,7 +13,7 @@ LDFLAGS =
 LIBS = -lpspgum -lpspgu -lpng -lz -lm
 
 EXTRA_TARGETS = EBOOT.PBP
-PSP_EBOOT_TITLE = intraFont Test
+PSP_EBOOT_TITLE = intraFont-G Sinusoid Test
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak

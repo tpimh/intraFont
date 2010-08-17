@@ -3,6 +3,7 @@ intraFont - A bitmap font library for PSP using the PSP's internal font (firmwar
 intraFont Version 0.31 by BenHur - http://www.psp-programming.com/benhur
 
 intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
+G-spec code by Geecko (2010)
 
 -=Info=-
 
@@ -19,10 +20,11 @@ Known issues:
   (INTRAFONT_CACHE_LARGE or INTRAFONT_CACHE_ALL) 
 - if you're using the graphics library then you may need to reset the sceGuTex* states to what they are defaulted
   to in the initGraphics() functions, after using the intraFont* functions 
+- scrolling text can NOT be used with rotation
 
 -=Samples=-
 
-There are two samples included, one for raw GU and the other using the graphics library from Yeldarb's tutorials 
+There are two samples included using the graphics library from Yeldarb's tutorials 
 on psp-programming.com
 
 It should be easy enough to add to any other library.
@@ -59,6 +61,11 @@ arib    ¦  177ms,  266kB, 1.9kCPS   ¦  177ms,  362kB, 1.9kCPS ¦  - no ASCII glyp
 (**) kr0 is slower because one character can consist of up to three glyphs.
 
 -=Changelog=-
+
+G-spec - added rotation support. The angle is specified by a new argument to intraFontSetStyle,
+         (float value in degrees). The performance hit is up to 40% when angle is not equal to 0,
+         because there is 6 vertices per char instead of 2. Rotation center specified by x and y.
+       - very little cleanup of the code, converted tabulation to 2 spaces, for a better readability
 
 0.31 - added option to set alternative font, which is used for characters that are not present in the current 
        font (e.g. if you want to print chars from two or more fonts in the same string)
