@@ -1,7 +1,7 @@
 # Ignore the build and lib dirs
 build
-lib/*
 
+*.a
 *.o
 
 # Ignore Mac specific files
