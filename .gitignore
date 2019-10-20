@@ -1,0 +1,11 @@
+# Ignore the build and lib dirs
+build
+lib/*
+
+*.o
+
+# Ignore Mac specific files
+.DS_Store
+
+# Ignore zipped release
+*.tar.gz
