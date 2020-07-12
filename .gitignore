@@ -9,3 +9,12 @@ build
 
 # Ignore zipped release
 *.tar.gz
+
+# Ignore binaries
+*.exe
+
+# Ignore fonts
+*.pgf
+*.bwfon
+*.bin
+*.dat
