@@ -11,97 +11,69 @@
  *
  */
 
-#include <pspkernel.h>
-#include <pspdisplay.h>
-#include <pspgu.h>
+#include <intraFont.h>
 #include <math.h>
 
-#include "../libraries/graphics.h"
-#include <intraFont.h>
+#include "../libraries/glfw_window.c"
 
-PSP_MODULE_INFO("intraFontTest", PSP_MODULE_USER, 1, 1);
-
-int exit_callback(int arg1, int arg2, void *common) {
-  sceKernelExitGame();
-  return 0;
-}
-int CallbackThread(SceSize args, void *argp) {
-  int cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
-  sceKernelRegisterExitCallback(cbid);
-  sceKernelSleepThreadCB();
-  return 0;
-}
-int SetupCallbacks(void) {
-  int thid = sceKernelCreateThread("CallbackThread", CallbackThread, 0x11, 0xFA0, PSP_THREAD_ATTR_USER, 0);
-  if (thid >= 0) sceKernelStartThread(thid, 0, 0);
-  return thid;
-}
-
+#define GU_PI ((float)M_PI)
 #define WHITE 0xFFFFFFFF
-#define GRAY  0xFF7F7F7F
+#define GRAY 0xFF7F7F7F
 #define BLACK 0xFF000000
+#define RED 0xFFFF0000
 
+intraFont* font = NULL;
 
-int main()
-{
-  SetupCallbacks();
-  initGraphics();
+float x, x2, tmp_angle;
+int i;
 
+typedef struct Sinusoid {
+  float angle;  // In degrees
+  float amplitude;
+  float step;
+  float speed;
+  float speed_inc;
+  char str[64];
+  int len;
+} Sinusoid;
+
+Sinusoid sinus = (Sinusoid){0.f, 35.f, 10.f, 0.f, 0.007f, "intraFont 0.31 - 2009 by BenHur", 31};
+Sinusoid sinus2 = (Sinusoid){0.f, 35.f, 10.f, 0.f, 0.007f, "port by mrneo240", 16};
+
+void load(void) {
   intraFontInit();
-  intraFont* font = intraFontLoad("flash0:/font/ltn8.pgf",0);
-  intraFontSetStyle(font,1.f,0,0,0.f,INTRAFONT_ALIGN_CENTER);
+  font = intraFontLoad("ltn8.pgf", 0);
+  intraFontSetStyle(font, 1.f, 0, 0, 0.f, INTRAFONT_ALIGN_CENTER);
+}
 
-  struct Sinusoid
-  {
-    float angle; // In degrees
-    float amplitude;
-    float step;
-    float speed;
-    float speed_inc;
-    char str[64];
-    int len;
-  } sinus = {0.f,35.f,10.f,0.f,0.007f,"intraFont 0.31 - 2009 by BenHur",31};
+void draw(void) {
+  // * Draw the sinusoid *
 
-  float x, tmp_angle;
-  int i;
+  // Get the x position of the 1st char
+  x = 24;  // 240 - intraFontMeasureText(font, sinus.str) / 2;
+  x2 = 120;
 
-  while (1)
-  {
-    clearScreen(GRAY);
+  // Increment the speed
+  if (fabsf(sinus.speed += sinus.speed_inc) > 10.f)
+    sinus.speed_inc = -sinus.speed_inc;
+  // Increment the angle
+  tmp_angle = (sinus.angle += sinus.speed);
+  if (sinus.angle > 360.f) sinus.angle -= 360.f;
 
-    guStart();
-
-    // * Draw the sinusoid *
-
-    // Get the x position of the 1st char
-    x = 240 - intraFontMeasureText(font,sinus.str)/2;
-    // Increment the speed
-    if (fabsf(sinus.speed += sinus.speed_inc) > 10.f)
-      sinus.speed_inc = -sinus.speed_inc;
-    // Increment the angle
-    tmp_angle = (sinus.angle += sinus.speed);
-    if (sinus.angle > 360.f) sinus.angle -= 360.f;
-
-    // Draw one by one
-    for (i=0; i!=sinus.len; i++, tmp_angle+=sinus.step)
-    {
-      intraFontSetStyle(font,1.f,BLACK,WHITE,45.f*cosf(tmp_angle*GU_PI/180.f),
-                        INTRAFONT_ALIGN_LEFT);
-      x = intraFontPrintEx(font,x,136 + sinus.amplitude*sinf(tmp_angle*GU_PI/180.f),
-                           sinus.str+i,1);
-    }
-
-    sceGuFinish();
-    sceGuSync(0,0);
-    
-    // Swap buffers
-    sceDisplayWaitVblankStart();
-    flipScreen();
+  // Draw one by one
+  for (i = 0; i != sinus.len; i++, tmp_angle += sinus.step) {
+    intraFontSetStyle(font, 2.5f, WHITE, GRAY, 45.f * cosf(tmp_angle * GU_PI / 180.f), INTRAFONT_ALIGN_LEFT);
+    x = intraFontPrintEx(font, x, 120 + sinus.amplitude * sinf(tmp_angle * GU_PI / 180.f), sinus.str + i, 1);
   }
-    
+
+  // Draw one by one
+  for (i = 0; i != sinus2.len; i++, tmp_angle += sinus2.step) {
+    intraFontSetStyle(font, 2.5f, RED, GRAY, 45.f * cosf(tmp_angle * GU_PI / 180.f), INTRAFONT_ALIGN_LEFT);
+    x2 = intraFontPrintEx(font, x2, 320 + sinus2.amplitude * sinf(tmp_angle * GU_PI / 180.f), sinus2.str + i, 1);
+  }
+}
+
+void leave(void) {
   intraFontUnload(font);
   intraFontShutdown();
-  sceKernelExitGame();
-
-  return 0;
 }

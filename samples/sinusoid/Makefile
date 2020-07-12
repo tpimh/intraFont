@@ -1,19 +1,21 @@
-TARGET = intraFontTest
-OBJS = sinus.o\
-       ../libraries/graphics.o ../libraries/framebuffer.o \
+CC = x86_64-w64-mingw32-gcc
+
+TARGET_EXE = sinus.exe
+OBJS = sinus.o
 
 INCDIR = ../../include
-CFLAGS = -O2 -G0 -Wall -g
+CFLAGS = -Os -Wall -s -I$(INCDIR)
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 
 LIBDIR = ../../lib
-LDFLAGS = 
-LIBS = -lintrafont -lpspgum -lpspgu -lpng -lz -lm
+LDFLAGS = -L$(LIBDIR)
+LIBS = -lintrafont -lglfw3 -lopengl32 -lglu32 -luser32 -lgdi32
 
-EXTRA_TARGETS = EBOOT.PBP
-PSP_EBOOT_TITLE = intraFont-G Sinusoid Test
+all: $(TARGET_EXE)
 
-PSPSDK=$(shell psp-config --pspsdk-path)
-include $(PSPSDK)/lib/build.mak
+$(TARGET_EXE): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
+clean:
+	del $(OBJS) $(TARGET_EXE)
