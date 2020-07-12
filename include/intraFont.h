@@ -148,6 +148,7 @@ typedef struct intraFont {
   unsigned char* fontdata;
   
   unsigned char* texture;          /**< The bitmap data */
+  unsigned int textureID;          /**< The bitmap data */
   unsigned int texWidth;           /**< Texture size (power2) */
   unsigned int texHeight;          /**< Texture height (power2) */  
   unsigned short texX;

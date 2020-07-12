@@ -2,16 +2,36 @@
  * libccc.c
  * Character Code Conversion Library
  * Version 0.31 by BenHur - http://www.psp-programming.com/benhur
+ * Windows port by mrneo240
  *
  * This work is licensed under the Creative Commons Attribution-Share Alike 3.0 License.
  * See LICENSE for more details.
  *
  */
-
+#ifdef PSP
 #include <pspkernel.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+
+#ifdef _PSP_FW_VERSION
+#define FILE_OPEN_R(name) sceIoOpen(name, O_RDONLY, 0777)
+#define FILE_OPEN_W(name) sceIoOpen(name, O_WRONLY|O_CREAT, 0777)
+#define FILE_SEEK(handle, offset, origin) sceIoLseek(handle, offset, origin)
+#define FILE_READ(file, data, size) sceIoRead(file, data, size)
+#define FILE_WRITE(file, data, size) sceIoWrite(file, data, size)
+#define FILE_CLOSE(handle) SceIoClose(handle)
+#define FILE_TYPE SceUID
+#else
+#define FILE_OPEN_R(name) fopen(name, "r")
+#define FILE_OPEN_W(name) fopen(name, "w")
+#define FILE_SEEK(handle, offset, origin) fseek(handle, offset, origin)
+#define FILE_READ(file, data, size) fread(data, size, 1, file)
+#define FILE_WRITE(file, data, size) fwrite(data, size, 1, file)
+#define FILE_CLOSE(handle) fclose(handle)
+#define FILE_TYPE FILE*
+#endif
 
 #include "libccc.h"
 
@@ -204,21 +224,21 @@ int cccLoadTable(const char *filename, unsigned char cp) {
   if (cp >= CCC_N_CP) return CCC_ERROR_UNSUPPORTED;
     
   /* read in (compressed) table_data */
-  SceUID fd = sceIoOpen(filename, PSP_O_RDONLY, 0777);
+  FILE_TYPE fd = FILE_OPEN_R(filename);
     if (fd < 0) return CCC_ERROR_FILE_READ;
-    unsigned int filesize = sceIoLseek(fd, 0, SEEK_END);
-    sceIoLseek(fd, 0, SEEK_SET);
+    unsigned int filesize = FILE_SEEK(fd, 0, SEEK_END);
+    FILE_SEEK(fd, 0, SEEK_SET);
     void* table_data = (void*)malloc(filesize);
   if (!table_data) {
-    sceIoClose(fd);
+    FILE_CLOSE(fd);
     return CCC_ERROR_MEM_ALLOC;
   }
-    if (sceIoRead(fd, table_data, filesize) != filesize) {
-    sceIoClose(fd);
+    if (FILE_READ(fd, table_data, filesize) != filesize) {
+    FILE_CLOSE(fd);
     free(table_data);
     return CCC_ERROR_FILE_READ;
   }
-  sceIoClose(fd);
+  FILE_CLOSE(fd);
 
   /* decompress requested tables */
   unsigned int *header = (unsigned int*)table_data;
@@ -351,7 +371,11 @@ int cccStrlenUCS2(cccUCS2 const * str) {
 int cccSJIStoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
+  #ifdef PSP
   if (!(__table_ptr__[CCC_CP932])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP932);
+  #else
+  if (!(__table_ptr__[CCC_CP932])) cccLoadTable("cptbl.dat", CCC_CP932);
+  #endif
   
   int i = 0, length = 0, j, code, id;
   if (__table_ptr__[CCC_CP932]) { //table is present
@@ -382,7 +406,11 @@ int cccSJIStoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
 int cccGBKtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
+  #ifdef PSP
   if (!(__table_ptr__[CCC_CP936])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP936);
+  #else
+  if (!(__table_ptr__[CCC_CP936])) cccLoadTable("cptbl.dat", CCC_CP936);
+  #endif
 
   unsigned char* entry;
   unsigned short code;
@@ -416,7 +444,11 @@ int cccGBKtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
 int cccKORtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
+  #ifdef PSP
   if (!(__table_ptr__[CCC_CP949])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP949);
+  #else
+  if (!(__table_ptr__[CCC_CP949])) cccLoadTable("cptbl.dat", CCC_CP949);
+  #endif
 
   unsigned char* entry;
   unsigned short code;
@@ -450,7 +482,11 @@ int cccKORtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
 int cccBIG5toUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
+  #ifdef PSP
   if (!(__table_ptr__[CCC_CP950])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP950);
+  #else
+  if (!(__table_ptr__[CCC_CP950])) cccLoadTable("cptbl.dat", CCC_CP950);
+  #endif
 
   typedef struct {
     unsigned short code;
@@ -521,7 +557,12 @@ int cccCodetoUCS2(cccUCS2 * dst, size_t count, cccCode const * str, unsigned cha
     default: 
       if (cp < CCC_N_CP) { //codepage in range?
         if (!cccInitialized) cccInit();
+        #ifdef PSP
         if (!(__table_ptr__[cp]) && (cp > 0)) cccLoadTable("flash0:/vsh/etc/cptbl.dat", cp);
+        #else
+        if (!(__table_ptr__[cp]) && (cp > 0)) cccLoadTable("cptbl.dat", cp);
+        #endif
+        
         while (str[length] && length < count) { //conversion: ASCII (if ASCII) or LUT-value (if LUT exists) or error_char (if LUT doesn't exist)
           if (str[length] < 0x80) {
             dst[length] = (cccUCS2)str[length];
