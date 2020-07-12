@@ -1,17 +1,20 @@
-PSPSDK = $(shell psp-config --pspsdk-path)
-PSPDIR = $(shell psp-config --psp-prefix)
+CC = x86_64-w64-mingw32-gcc
 
-CFLAGS = -O2 -G0 -ffast-math -fomit-frame-pointer -Wall -I include 
+CFLAGS = -Os -ffast-math -Wall -I include 
+LDFLAGS =
+
+SRC_DIR = src
 
 OBJS = src/intraFont.o src/libccc.o
 TARGET_LIB = lib/libintrafont.a
 
-include $(PSPSDK)/lib/build.mak
+all: $(TARGET_LIB)
+
+$(TARGET_LIB): $(OBJS)
+	$(AR) crus $@ $^
 
 release: $(TARGET_LIB)
 	tar -zcvf libintraFont.tar.gz lib include
 
-install: all
-	mkdir -p $(PSPDIR)/include $(PSPDIR)/lib
-	cp include/*.h $(PSPDIR)/include
-	cp lib/*.a $(PSPDIR)/lib
+clean:
+	del $(SRC_DIR)\\*.o
