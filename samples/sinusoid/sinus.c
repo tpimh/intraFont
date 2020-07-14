@@ -17,10 +17,11 @@
 #include "../libraries/glfw_window.c"
 
 #define GU_PI ((float)M_PI)
+/* ARGB */
 #define WHITE 0xFFFFFFFF
 #define GRAY 0xFF7F7F7F
 #define BLACK 0xFF000000
-#define RED 0xFFFF0000
+#define RED 0xFF0000FF
 
 intraFont* font = NULL;
 
@@ -50,7 +51,7 @@ void draw(void) {
   // * Draw the sinusoid *
 
   // Get the x position of the 1st char
-  x = 24;  // 240 - intraFontMeasureText(font, sinus.str) / 2;
+  x = 12;  // 240 - intraFontMeasureText(font, sinus.str) / 2;
   x2 = 120;
 
   // Increment the speed
@@ -62,14 +63,14 @@ void draw(void) {
 
   // Draw one by one
   for (i = 0; i != sinus.len; i++, tmp_angle += sinus.step) {
-    intraFontSetStyle(font, 2.5f, WHITE, GRAY, 45.f * cosf(tmp_angle * GU_PI / 180.f), INTRAFONT_ALIGN_LEFT);
-    x = intraFontPrintEx(font, x, 120 + sinus.amplitude * sinf(tmp_angle * GU_PI / 180.f), sinus.str + i, 1);
+    intraFontSetStyle(font, 2.f, WHITE, BLACK, 45.f * cosf(tmp_angle * GU_PI / 180.f), INTRAFONT_ALIGN_LEFT);
+    x = intraFontPrintEx(font, x, 80 + sinus.amplitude * sinf(tmp_angle * GU_PI / 180.f), sinus.str + i, 1);
   }
 
   // Draw one by one
   for (i = 0; i != sinus2.len; i++, tmp_angle += sinus2.step) {
-    intraFontSetStyle(font, 2.5f, RED, GRAY, 45.f * cosf(tmp_angle * GU_PI / 180.f), INTRAFONT_ALIGN_LEFT);
-    x2 = intraFontPrintEx(font, x2, 320 + sinus2.amplitude * sinf(tmp_angle * GU_PI / 180.f), sinus2.str + i, 1);
+    intraFontSetStyle(font, 2.f, RED, BLACK, 45.f * cosf(tmp_angle * GU_PI / 180.f), INTRAFONT_ALIGN_LEFT);
+    x2 = intraFontPrintEx(font, x2, 200 + sinus2.amplitude * sinf(tmp_angle * GU_PI / 180.f), sinus2.str + i, 1);
   }
 }
 

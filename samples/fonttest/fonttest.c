@@ -22,6 +22,7 @@
 
 // Colors
 enum colors {
+  /* ARGB */
   RED = 0xFF0000FF,
   GREEN = 0xFF00FF00,
   BLUE = 0xFFFF0000,
@@ -141,10 +142,10 @@ void draw(void) {
   intraFontSetEncoding(jpn0, INTRAFONT_STRING_UTF8);  //temporarely switch to UTF-8 (INTRAFONT_STRING_SJIS was set in intraFontLoad call)
   x = intraFontPrint(jpn0, 110, y, utf8_jpn);         //print UTF-8 encoded string
   if (x == 110) intraFontPrint(ltn[8], 110, y, "[n/a]");
-  intraFontSetEncoding(jpn0, INTRAFONT_STRING_SJIS);  //switch back to S-JIS
 
+  intraFontSetEncoding(jpn0, INTRAFONT_STRING_SJIS);  //switch back to S-JIS
   intraFontPrint(ltn[8], 250, y, "JPN (S-JIS):");
-  x = intraFontPrint(jpn0, 350, y, "ã‚¤ãƒ³ãƒˆãƒ©ãƒ•ã‚©ãƒ³ãƒˆ");  //S-JIS encoded text string (flag INTRAFONT_STRING_SJIS set in intraFontLoad call)
+  x = intraFontPrint(jpn0, 350, y, "ƒCƒ“ƒgƒ‰ƒtƒHƒ“ƒg");  //S-JIS encoded text string (flag INTRAFONT_STRING_SJIS set in intraFontLoad call)
   if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
 
   y += 17;
@@ -163,6 +164,7 @@ void draw(void) {
   intraFontPrint(ltn[8], 10, y, "KOR (UTF8):");
   char utf8_kr[] = {0xed, 0x99, 0x98, 0xec, 0x98, 0x81, 0x20, 0xeb, 0x8c, 0x80, 0xed, 0x95, 0x9c, 0xeb, 0xaf, 0xbc, 0xea, 0xb5, 0xad, 0};
   x = intraFontPrint(kr0, 110, y, utf8_kr);  //print UTF-8 string (flag INTRAFONT_STRING_UTF8 set in intraFontLoad call)
+  //x = intraFontPrint(kr0, 110, y, "?? ????);  //print UTF-8 string (flag INTRAFONT_STRING_UTF8 set in intraFontLoad call)
   if (x == 110) intraFontPrint(ltn[8], 110, y, "[n/a]");
 
   intraFontPrint(ltn[8], 250, y, "MIX (UCS2):");

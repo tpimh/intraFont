@@ -1,4 +1,4 @@
-#include <windows.h>
+﻿#include <windows.h>
 #if defined(__MINGW32__) || defined(__linux__)
 #include <GLFW/galo.h>
 #include <GLFW/glfw3.h>
@@ -36,6 +36,7 @@ void perspectiveGL(GLdouble fovY, GLdouble aspect, GLdouble zNear, GLdouble zFar
 /* A general OpenGL initialization function.  Sets all of the initial parameters. */
 void RNDR_Init(void)  // We call this right after our OpenGL window is created.
 {
+  glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
   glClearDepth(1.0);        // Enables Clearing Of The Depth Buffer
   glDepthFunc(GL_LESS);     // The Type Of Depth Test To Do
   glDisable(GL_DEPTH_TEST);  // Enables Depth Testing
@@ -56,7 +57,8 @@ void RNDR_Init(void)  // We call this right after our OpenGL window is created.
 void UI_Set2D(void) {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(0, 640, 480, 0, -1, 1);
+  //glOrtho(0, 640, 480, 0, -1, 1);
+  glOrtho(0, 480, 272, 0, -1, 1);
 }
 
 int main(void) {
@@ -70,7 +72,8 @@ int main(void) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-  window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+  //window = glfwCreateWindow(640, 480, "intrafont_universal", NULL, NULL);
+  window = glfwCreateWindow(480, 272, "intrafont_universal", NULL, NULL);
   if (!window) {
     glfwTerminate();
     exit(EXIT_FAILURE);
