@@ -16,20 +16,22 @@
 #include <malloc.h>
 
 #ifdef _PSP_FW_VERSION
-#define FILE_OPEN_R(name) sceIoOpen(name, O_RDONLY, 0777)
-#define FILE_OPEN_W(name) sceIoOpen(name, O_WRONLY|O_CREAT, 0777)
+#define FILE_OPEN_R(name) sceIoOpen(name, PSP_O_RDONLY, 0777)
+#define FILE_OPEN_W(name) sceIoOpen(name, PSP_O_WRONLY|PSP_O_CREAT, 0777)
 #define FILE_SEEK(handle, offset, origin) sceIoLseek(handle, offset, origin)
 #define FILE_READ(file, data, size) sceIoRead(file, data, size)
 #define FILE_WRITE(file, data, size) sceIoWrite(file, data, size)
-#define FILE_CLOSE(handle) SceIoClose(handle)
+#define FILE_CLOSE(handle) sceIoClose(handle)
+#define FILE_TELL(a, b)
 #define FILE_TYPE SceUID
 #else
-#define FILE_OPEN_R(name) fopen(name, "r")
-#define FILE_OPEN_W(name) fopen(name, "w")
+#define FILE_OPEN_R(name) fopen(name, "rb")
+#define FILE_OPEN_W(name) fopen(name, "wb")
 #define FILE_SEEK(handle, offset, origin) fseek(handle, offset, origin)
-#define FILE_READ(file, data, size) fread(data, size, 1, file)
-#define FILE_WRITE(file, data, size) fwrite(data, size, 1, file)
+#define FILE_READ(file, data, size) fread(data, 1, size, file)
+#define FILE_WRITE(file, data, size) fwrite(data, 1, size, file)
 #define FILE_CLOSE(handle) fclose(handle)
+#define FILE_TELL(handle, output) output = ftell(handle)
 #define FILE_TYPE FILE*
 #endif
 
@@ -227,6 +229,7 @@ int cccLoadTable(const char *filename, unsigned char cp) {
   FILE_TYPE fd = FILE_OPEN_R(filename);
     if (fd < 0) return CCC_ERROR_FILE_READ;
     unsigned int filesize = FILE_SEEK(fd, 0, SEEK_END);
+    FILE_TELL(fd, filesize);
     FILE_SEEK(fd, 0, SEEK_SET);
     void* table_data = (void*)malloc(filesize);
   if (!table_data) {
@@ -381,14 +384,20 @@ int cccSJIStoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (__table_ptr__[CCC_CP932]) { //table is present
     unsigned short *header = (unsigned short*)(__table_ptr__[CCC_CP932]);
     cccUCS2 *SJIStoUCS2 = (cccUCS2*)header+header[2]*3+3;    
-    while (str[i] && length < count) {
+    while (str[i] && (length < count)) {
       code = str[i];
       id = -1;
       for (j = 1; (j <= header[2]) && (id < 0); j++) {
         if ((code >= header[j*3]) && (code <= header[j*3+1])) {
           id = header[j*3+2] + code - header[j*3]; 
         } else {
-          if (j == 2) code = 0x0200 * str[i] - 0xE100 - ((str[i] >= 0xE0) ? 0x8000 : 0) + str[i+1] + ((str[i+1] <= 0x7E) ? -0x1F : ((str[i+1] >= 0x9F) ? 0x82 : -0x20) );
+          if (j == 2) {
+            /*@Todo: This is still gross*/
+            const int ternary_1 = (str[i] >= 0xE0) ? 0x8000 : 0;
+            const int ternary_2in = (str[i+1] >= 0x9F) ? 0x82 : -0x20;
+            const int ternary_2out = ((str[i+1] <= 0x7E) ? -0x1F :  ternary_2in);
+            code = 0x0200 * str[i] - 0xE100 - (ternary_1) + str[i+1] + ternary_2out;
+          }
         }
       }
       dst[length++] = (id < 0) ? __error_char_ucs2__ : SJIStoUCS2[id];

@@ -17,7 +17,11 @@
 #include <pspkernel.h>
 #include <pspgu.h>
 #include <pspdisplay.h>
+#endif
+#ifdef _OSLIB_H_
 #define OSLIB_FREE(a) free((a))
+#else 
+#define OSLIB_FREE(a)
 #endif
 #include <stdlib.h>
 #include <stdarg.h>
@@ -30,7 +34,6 @@
 #include <GLFW/galo.h>
 #include <GLFW/glfw3.h>
 #define memalign(a, b) malloc(b)
-#define OSLIB_FREE(a)
 #define GU_PI ((float)M_PI)
 #define DESKTOP 1
 
@@ -220,9 +223,8 @@ int intraFontGetBMP(intraFont *font, unsigned short id, unsigned char glyphtype)
 								font->texture[((font->texX + (7 - (xx & 7) + (xx & 248))) + (font->texY + yy) * font->texWidth) >> 1] &= 0xF0;
 								font->texture[((font->texX + (7 - (xx & 7) + (xx & 248))) + (font->texY + yy) * font->texWidth) >> 1] |= (value);
 							}
-							#else 
-							/*@Note: char glyph texture gen */
-							#warning CHAR Glyph texture gen not exist
+							#else
+							font_texture_p[((font->texX + (7 - (xx & 7) + (xx & 248))) + (font->texY + yy) * font->texWidth)] = clut[value & 0xf];
 							#endif
 						}
 						else
@@ -239,9 +241,8 @@ int intraFontGetBMP(intraFont *font, unsigned short id, unsigned char glyphtype)
 								font->texture[((font->texX + xx) + (font->texY + yy) * font->texWidth) >> 1] &= 0xF0;
 								font->texture[((font->texX + xx) + (font->texY + yy) * font->texWidth) >> 1] |= (value);
 							}
-							#else 
-							/*@Note: shadow glyph texture gen */
-							#warning SHADOW Glyph texture gen not exist
+							#else
+							font_texture_p[((font->texX + xx) + (font->texY + yy) * font->texWidth)] = clut[value & 0xf];
 							#endif
 						}
 					}
@@ -666,10 +667,11 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 	#if DESKTOP
 	font->texture = (unsigned char *)memalign(16, sizeof(unsigned int)*font->texWidth * font->texHeight);
 	memset(font->texture, 255, sizeof(unsigned int)*font->texWidth * font->texHeight);
+	font->textureID = 0;
 	#else 
 	font->texture = (unsigned char *)memalign(16, sizeof(unsigned int)*font->texWidth * font->texHeight >> 1);
 	#endif
-	font->textureID = 0;
+	font->fontdata = NULL;
 	if (!font->filename || !font->texture)
 	{
 		fclose(file);
@@ -703,8 +705,9 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 
 		//read shadowmap
 		unsigned long *ucs_shadowmap = intraFontGetTable(file, header.shadowmap_len, header.shadowmap_bpe);
-		if (ucs_shadowmap == NULL)
+		if (ucs_shadowmap == NULL && (header.shadowmap_len != 0))
 		{
+			/* change logic here to allow zero shadow fonts */
 			free(advancemap);
 			fclose(file);
 			OSLIB_FREE((void *)input_free);
@@ -862,7 +865,11 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 		for (i = 0; i < font->n_chars; i++)
 		{
 			shadow_id = font->glyph[i].shadowID;
-			char_id = intraFontGetID(font, ucs_shadowmap[shadow_id]);
+			if(!ucs_shadowmap){
+				char_id = 65535; //char not in charmap
+			} else {
+				char_id = intraFontGetID(font, ucs_shadowmap[shadow_id]);
+			}
 			if (char_id < font->n_chars && font->shadowGlyph[shadow_id].shadowID == 0)
 			{ //valid char and shadow glyph not yet loaded
 				j = charptr[char_id] * 4 * 8;
@@ -1798,8 +1805,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 	unsigned int color = font->color, shadowColor = font->shadowColor;
 	float glyphscale = font->size;
-	float width = 0.f, height = font->advancey * glyphscale / 4.0;
-	float left = x, top = y - 2 * height;
+	float width = 0.f, height = font->advancey * glyphscale / 4.0f;
+	float left = x, top = y - 2.0f * height;
 	int eol = -1, n_spaces = -1, scroll = 0, textwidth;
 	float fill = 0.f;
 	float xl, xr, yu, yd, ul, ur, vu, vd;
@@ -1810,8 +1817,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 		unsigned int c;
 		float x, y, z;
 	} fontVertex;
-	static fontVertex *v = NULL;
-	static size_t v_last_size = 0;
+	fontVertex *v = NULL;
+	size_t v_last_size = 0;
 	fontVertex *v0, *v1, *v2, *v3, *v4, *v5;
 	fontVertex *s0, *s1, *s2, *s3, *s4, *s5;
 
@@ -1826,8 +1833,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 		last_n_glyphs = 0;
 		for (i = 0; i < length; i++)
 		{
-
 			char_id = intraFontGetID(font, text[i]); //char
+			//printf("CharID: %d UCS2: %d\n", char_id, text[i]);
 			if (char_id < font->n_chars)
 			{
 				if (font->fileType == FILETYPE_PGF)
@@ -1864,7 +1871,9 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 					if (n_glyphs > last_n_glyphs)
 					{
-						n_sglyphs++; //shadow
+						/* Only add shadows if they exist */
+						//@Error: Not quite!
+						n_sglyphs+= !!font->n_shadows; //shadow
 						if (!(font->shadowGlyph[font->glyph[char_id].shadowID].flags & PGF_CACHED))
 						{
 							if (intraFontGetBMP(font, font->glyph[char_id].shadowID, PGF_SHADOWGLYPH))
@@ -1881,7 +1890,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 						if (intraFontGetBMP(font, char_id, PGF_CHARGLYPH))
 							changed = 1;
 					}
-					n_sglyphs++; //shadow
+					/* Only add shadows if they exist */
+					n_sglyphs+= !!font->n_shadows; //shadow
 					if (!(font->shadowGlyph[0].flags & PGF_CACHED))
 					{
 						if (intraFontGetBMP(font, font->glyph[0].shadowID, PGF_SHADOWGLYPH))
@@ -1934,8 +1944,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 						{
 
 						case INTRAFONT_SCROLL_LEFT:							   //scroll left
-							/*@Note: scGuScissor was here */
-							//sceGuScissor(left - 2, 0, left + column + 4, 272); //limit to column width
+							/*@Note: scGuScissor was here, this is incorrect */
+							glScissor(left - 2, 0, left + column + 4, 480); //limit to column width
 							if (count < 60)
 							{
 								//show initial text for 1s
@@ -1956,8 +1966,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 							break;
 
 						case INTRAFONT_SCROLL_SEESAW:											//scroll left and right
-							/*@Note: scGuScissor was here */
-							//sceGuScissor(left - column / 2 - 2, 0, left + column / 2 + 4, 272); //limit to column width
+							/*@Note: scGuScissor was here, this is incorrect */
+							glScissor(left - column / 2 - 2, 0, left + column / 2 + 4, 272); //limit to column width
 							textwidth -= column;
 							if (count < 60)
 							{
@@ -1983,8 +1993,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 							break;
 
 						case INTRAFONT_SCROLL_RIGHT:						   //scroll right
-							/*@Note: scGuScissor was here */
-							//sceGuScissor(left - column - 2, 0, left + 4, 272); //limit to column width
+							/*@Note: scGuScissor was here, this is incorrect */
+							glScissor(left - column - 2, 0, left + 4, 272); //limit to column width
 							if (count < 60)
 							{
 								left -= textwidth; //show initial text for 1s
@@ -2007,8 +2017,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 							break;
 
 						case INTRAFONT_SCROLL_THROUGH:						   //scroll through
-							/*@Note: scGuScissor was here */
-							//sceGuScissor(left - 2, 0, left + column + 4, 272); //limit to column width
+							/*@Note: scGuScissor was here, this is incorrect */
+							glScissor(left - 2, 0, left + column + 4, 272); //limit to column width
 							if (count < (textwidth + column + 30))
 							{
 								left += column + 4 - count; //scroll through
@@ -2022,8 +2032,8 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 						}
 						ux.i++;   //increase counter
 						x = ux.f; //copy back to original var
-						/*@Note: sceGuEnable was here */
-						//sceGuEnable(GU_SCISSOR_TEST);
+						/*@Note: sceGuEnable was here  for scissor */
+						glEnable(GL_SCISSOR_TEST);
 					}
 				}
 				else
@@ -2092,7 +2102,6 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 		char_id = intraFontGetID(font, text[i]);
 		if (char_id < font->n_chars)
 		{
-
 			glyph_ptr = (font->fileType == FILETYPE_PGF) ? char_id : 0; //for fields not covered in GlyphBW (advance,...)
 			shadowGlyph_ptr = (font->fileType == FILETYPE_PGF) ? font->glyph[glyph_ptr].shadowID : 0;
 
@@ -2206,7 +2215,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 			}
 
 			//add vertices for shadow
-			if (c_index > last_c_index)
+			if (c_index > last_c_index && (shadowGlyph_ptr))
 			{
 				
 				Glyph *shadowGlyph = &(font->shadowGlyph[shadowGlyph_ptr]);
@@ -2217,8 +2226,6 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 				yu = top + height - shadowGlyph->top * glyphscale * 64.0f / ((float)font->shadowscale);
 				yd = yu + shadowGlyph->height * glyphscale * 64.0f / ((float)font->shadowscale);
 
-				float w = shadowGlyph->width * glyphscale * 64.0f / ((float)font->shadowscale);
-				float h = shadowGlyph->height * glyphscale * 64.0f / ((float)font->shadowscale);
 				// Tex coords
 				ul = shadowGlyph->x - 0.25f;
 				ur = shadowGlyph->x + shadowGlyph->width + 0.25f;
@@ -2289,7 +2296,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 			}
 			else
 			{
-				width += font->glyph[glyph_ptr].advance * glyphscale * 0.25;
+				width += font->glyph[glyph_ptr].advance * glyphscale * 0.25f;
 			}
 
 			if ((text[i] == 32) && ((font->options & INTRAFONT_ALIGN_FULL) == INTRAFONT_ALIGN_FULL))
@@ -2301,8 +2308,10 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 			{
 				unsigned int altOptions = (font->altFont)->options;
 				(font->altFont)->options = altOptions & (PGF_WIDTH_MASK + PGF_CACHE_MASK);
-				width += intraFontPrintColumnUCS2Ex(font->altFont, left + width, top + height, 0.0f, text + i, 1) - (left + width);
+				const float adjust = left + width;
+				width += intraFontPrintColumnUCS2Ex(font->altFont, adjust, top + height, 0.0f, text + i, 1)- (adjust);
 				(font->altFont)->options = altOptions;
+				
 			}
 		}
 	}
@@ -2330,13 +2339,14 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 	glEnableClientState(GL_COLOR_ARRAY);
 	glVertexPointer(3, GL_FLOAT, sizeof(fontVertex), &v[0].x);
 	glTexCoordPointer(2, GL_FLOAT, sizeof(fontVertex), &v[0].u);
-	glColorPointer(GL_BGRA , GL_UNSIGNED_BYTE, sizeof(fontVertex), &v[0].c);
+	glColorPointer(4 , GL_UNSIGNED_BYTE, sizeof(fontVertex), &v[0].c);
 	//glInterleavedArrays(GL_T2F_C4UB_V3F, 0, &v[0]);
 
 	glDrawArrays(GL_TRIANGLES, 0, (n_glyphs + n_sglyphs) * VERTEX_PER_QUAD);
-	/*@Note: Not working currently */
-	//if (font->fileType == FILETYPE_BWFON) //draw chars again without shadows for improved readability
-	//		glDrawArrays(GL_TRIANGLES, (n_sglyphs * VERTEX_PER_QUAD), n_glyphs * VERTEX_PER_QUAD);
+	
+	glDisable(GL_SCISSOR_TEST);
+	if (font->fileType == FILETYPE_BWFON) //draw chars again without shadows for improved readability
+		glDrawArrays(GL_TRIANGLES, (n_sglyphs) * VERTEX_PER_QUAD, (n_glyphs) * VERTEX_PER_QUAD);
 
 	if (scroll == 1)
 	{

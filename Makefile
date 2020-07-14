@@ -1,6 +1,7 @@
 CC = x86_64-w64-mingw32-gcc
+AR = x86_64-w64-mingw32-gcc-ar
 
-CFLAGS = -Os -ffast-math -Wall -I include 
+CFLAGS = -Wall -I include 
 LDFLAGS =
 
 SRC_DIR = src
@@ -8,13 +9,19 @@ SRC_DIR = src
 OBJS = src/intraFont.o src/libccc.o
 TARGET_LIB = lib/libintrafont.a
 
-all: $(TARGET_LIB)
+all: release
+
+debug: CFLAGS += -O0 -g -DDEBUG
+debug: $(TARGET_LIB)
+
+release: CFLAGS += -Os -ffast-math
+release: $(TARGET_LIB)
 
 $(TARGET_LIB): $(OBJS)
 	$(AR) crus $@ $^
 
-release: $(TARGET_LIB)
-	tar -zcvf libintraFont.tar.gz lib include
+dist: release
+	tar -zcvf libintraFont_x86_64-w64-mingw32.tar.gz $(TARGET_LIB) include/intraFont.h include/libccc.h
 
 clean:
-	del $(SRC_DIR)\\*.o
+	-del $(SRC_DIR)\\*.o
