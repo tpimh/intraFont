@@ -17,6 +17,10 @@ debug: $(TARGET_LIB)
 release: CFLAGS += -Os -ffast-math
 release: $(TARGET_LIB)
 
+samples:
+	make -C samples/fonttest -f Makefile.win release
+	make -C samples/sinusoid -f Makefile.win release
+
 $(TARGET_LIB): $(OBJS)
 	$(AR) crus $@ $^
 
@@ -25,3 +29,5 @@ dist: release
 
 clean:
 	-del $(SRC_DIR)\\*.o
+
+.PHONY: release debug clean dist samples
