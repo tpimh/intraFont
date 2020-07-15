@@ -15,8 +15,8 @@ Original intraFont library by BenHur - http://www.psp-programming.com/benhur
 
 # Screenshots
 
-![dreamcast](/img/screen_dc?raw=true)
-![windows](/img/screen_win?raw=true)
+![dreamcast](/img/screen_dc.png?raw=true)
+![windows](/img/screen_win.png?raw=true)
 
 # Info
 
