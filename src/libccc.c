@@ -35,6 +35,16 @@
 #define FILE_TYPE FILE*
 #endif
 
+#if defined(_PSP)
+#define FILE_PREFIX "flash0:/vsh/etc/"
+#endif
+#if defined(_arch_dreamcast)
+#define FILE_PREFIX "/cd/"
+#endif
+#ifndef FILE_PREFIX
+#define FILE_PREFIX ""
+#endif
+
 #include "libccc.h"
 
 static unsigned char cccInitialized = 0;
@@ -374,12 +384,8 @@ int cccStrlenUCS2(cccUCS2 const * str) {
 int cccSJIStoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
-  #ifdef PSP
-  if (!(__table_ptr__[CCC_CP932])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP932);
-  #else
-  if (!(__table_ptr__[CCC_CP932])) cccLoadTable("cptbl.dat", CCC_CP932);
-  #endif
-  
+  if (!(__table_ptr__[CCC_CP932])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP932);
+
   int i = 0, length = 0, j, code, id;
   if (__table_ptr__[CCC_CP932]) { //table is present
     unsigned short *header = (unsigned short*)(__table_ptr__[CCC_CP932]);
@@ -415,11 +421,7 @@ int cccSJIStoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
 int cccGBKtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
-  #ifdef PSP
-  if (!(__table_ptr__[CCC_CP936])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP936);
-  #else
-  if (!(__table_ptr__[CCC_CP936])) cccLoadTable("cptbl.dat", CCC_CP936);
-  #endif
+  if (!(__table_ptr__[CCC_CP936])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP936);
 
   unsigned char* entry;
   unsigned short code;
@@ -453,11 +455,7 @@ int cccGBKtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
 int cccKORtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
-  #ifdef PSP
-  if (!(__table_ptr__[CCC_CP949])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP949);
-  #else
-  if (!(__table_ptr__[CCC_CP949])) cccLoadTable("cptbl.dat", CCC_CP949);
-  #endif
+  if (!(__table_ptr__[CCC_CP949])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP949);
 
   unsigned char* entry;
   unsigned short code;
@@ -491,11 +489,7 @@ int cccKORtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
 int cccBIG5toUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
-  #ifdef PSP
-  if (!(__table_ptr__[CCC_CP950])) cccLoadTable("flash0:/vsh/etc/cptbl.dat", CCC_CP950);
-  #else
-  if (!(__table_ptr__[CCC_CP950])) cccLoadTable("cptbl.dat", CCC_CP950);
-  #endif
+  if (!(__table_ptr__[CCC_CP950])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP950);
 
   typedef struct {
     unsigned short code;
@@ -566,11 +560,7 @@ int cccCodetoUCS2(cccUCS2 * dst, size_t count, cccCode const * str, unsigned cha
     default: 
       if (cp < CCC_N_CP) { //codepage in range?
         if (!cccInitialized) cccInit();
-        #ifdef PSP
-        if (!(__table_ptr__[cp]) && (cp > 0)) cccLoadTable("flash0:/vsh/etc/cptbl.dat", cp);
-        #else
-        if (!(__table_ptr__[cp]) && (cp > 0)) cccLoadTable("cptbl.dat", cp);
-        #endif
+        if (!(__table_ptr__[cp]) && (cp > 0)) cccLoadTable( FILE_PREFIX "cptbl.dat", cp);
         
         while (str[length] && length < count) { //conversion: ASCII (if ASCII) or LUT-value (if LUT exists) or error_char (if LUT doesn't exist)
           if (str[length] < 0x80) {

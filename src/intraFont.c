@@ -13,35 +13,41 @@
  *
  */
 
+#if defined(__WIN32) || defined(__WIN64)
+#include <windows.h>
+#include <GLFW/galo.h>
+#include <GLFW/glfw3.h>
+#define memalign(a, b) malloc(b)
+#define INFO(msg) \
+    fprintf(stderr, "info: %s:%d: ", __FILE__, __LINE__); \
+    fprintf(stderr, "%s\n" , msg);
+#endif
 #if defined(_PSP)
 #include <pspkernel.h>
 #include <pspgu.h>
 #include <pspdisplay.h>
 #endif
-#ifdef _OSLIB_H_
-#define OSLIB_FREE(a) free((a))
-#else 
-#define OSLIB_FREE(a)
+#if defined(_arch_dreamcast)
+#include <gl.h>
 #endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 #include <math.h>
-#if defined(__WIN32) || defined(__WIN64)
-#include <windows.h>
-#include <GLFW/galo.h>
-#include <GLFW/glfw3.h>
-#define memalign(a, b) malloc(b)
+#include <intraFont.h>
+#if defined(_OSLIB_H_)
+#define OSLIB_FREE(a) free((a))
+#else 
+#ifndef M_PI
+#define M_PI ((float)(3.14159265358979323846))
+#endif
 #define GU_PI ((float)M_PI)
 #define DESKTOP 1
-
-#define INFO(msg) \
-    fprintf(stderr, "info: %s:%d: ", __FILE__, __LINE__); \
-    fprintf(stderr, "%s\n" , msg);
+#define OSLIB_FREE(a)
 #endif
-#include <intraFont.h>
 
 static unsigned int __attribute__((aligned(16))) clut[16];
 
@@ -406,7 +412,8 @@ unsigned short intraFontGetID(intraFont *font, cccUCS2 ucs)
 	return id;
 }
 
-static int intraFontSwizzle(intraFont *font)
+#if defined(_PSP)
+static int  intraFontSwizzle(intraFont *font)
 {
 	int height = font->texHeight;
 	int byteWidth = font->texWidth >> 1;
@@ -444,6 +451,7 @@ static int intraFontSwizzle(intraFont *font)
 
 	return 1;
 }
+#endif
 
 int intraFontPreCache(intraFont *font, unsigned int options)
 {
@@ -509,8 +517,10 @@ int intraFontPreCache(intraFont *font, unsigned int options)
 	sceKernelDcacheWritebackAll();
 	intraFontSwizzle(font);
 	sceKernelDcacheWritebackAll();
-	#else 
-	intraFontSwizzle(font);
+	#else
+	/*@Note: this is better, unsure if final */
+	font->options |= INTRAFONT_CACHE_ASCII;
+	intraFontActivate(font);
 	#endif
 
 	return 1;
@@ -655,6 +665,7 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 	font->options = options;
 	if ((options & INTRAFONT_CACHE_ASCII))
 		font->options &= ~INTRAFONT_CACHE_ASCII; //pre-cached texture enabled at the end of font-load
+	font->options |= INTRAFONT_DIRTY;
 	font->size = 1.0f;							 //default size
 	font->color = 0xFFFFFFFF;					 //non-transparent white
 	font->shadowColor = 0xFF000000;				 //non-transparent black
@@ -667,10 +678,12 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 	#if DESKTOP
 	font->texture = (unsigned char *)memalign(16, sizeof(unsigned int)*font->texWidth * font->texHeight);
 	memset(font->texture, 255, sizeof(unsigned int)*font->texWidth * font->texHeight);
-	font->textureID = 0;
 	#else 
 	font->texture = (unsigned char *)memalign(16, sizeof(unsigned int)*font->texWidth * font->texHeight >> 1);
 	#endif
+	font->textureID = 0;
+	font->v = NULL;
+	font->v_size = 0;
 	font->fontdata = NULL;
 	if (!font->filename || !font->texture)
 	{
@@ -998,6 +1011,7 @@ int intraFontInit(void)
 	int n;
 	for (n = 0; n < 16; n++)
 		clut[n] = ((n * 17) << 24) | 0xffffff;
+
 	return 1;
 }
 
@@ -1031,23 +1045,25 @@ static inline void intraFontActivate_PC(intraFont *font){
 	glEnable(GL_TEXTURE_2D);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glBindTexture(GL_TEXTURE_2D, font->textureID);
-	glTexImage2D(GL_TEXTURE_2D,      /* target */
-							0,                   /* level */
-							GL_RGBA8, 					 /* internal format */
-							font->texWidth, 		 /* width */
-							font->texWidth,      /* height */
-							0,                   /* border */
-							GL_BGRA,      			 /* texture format */
-							GL_UNSIGNED_INT_8_8_8_8_REV,    /* texture type */
-							font->texture);      /* the texture */
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-}
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	/* Upload if needed */
+	if(font->options & INTRAFONT_DIRTY){
+#if defined(_arch_dreamcast)
+		glTexImage2D(GL_TEXTURE_2D,	0, 4, font->texWidth, font->texWidth,	0, GL_RGBA, GL_UNSIGNED_BYTE, font->texture);
+#else
+		glTexImage2D(GL_TEXTURE_2D,	0, GL_RGBA8, font->texWidth, font->texWidth,0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, font->texture);
+#endif
+		printf("Texture uploaded!\n");
+		font->options &= ~INTRAFONT_DIRTY;
+	}
+}	
 #endif
 
 void intraFontActivate(intraFont *font)
@@ -1057,7 +1073,7 @@ void intraFontActivate(intraFont *font)
 	if (!font->texture)
 		return;
 
-#ifdef PSP
+#if defined(_PSP)
 	intraFontActivate_PSP(font);
 #else
 	intraFontActivate_PC(font);
@@ -1207,6 +1223,8 @@ float intraFontPrintUCS2Ex(intraFont *font, float x, float y, const cccUCS2 *tex
 
 float intraFontPrintColumnUCS2(intraFont *font, float x, float y, float column, const cccUCS2 *text)
 {
+	/*@Note: Why does this exist ? */
+	(void) column;
 	return intraFontPrintColumnUCS2Ex(font, x, y, 0.0f, text, cccStrlenUCS2(text));
 }
 
@@ -1777,6 +1795,13 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 #ifdef DESKTOP
 
+struct fontVertex
+{
+	float u, v;
+	unsigned int c;
+	float x, y, z;
+};
+
 #define VERTEX_PER_QUAD (6)
 float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column, const cccUCS2 *text, int length)
 {
@@ -1803,28 +1828,26 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 		}
 	}
 
+	#if defined(_arch_dreamcast)
+	unsigned int color = ((font->color)&0xff000000)| ((font->color)&0xff00)  | ((font->color<<16)&0xff0000) | ((font->color>>16)&0xff);
+	unsigned int shadowColor = ((font->shadowColor)&0xff000000)| ((font->shadowColor)&0xff00)  | ((font->shadowColor<<16)&0xff0000) | ((font->shadowColor>>16)&0xff);
+	#else
 	unsigned int color = font->color, shadowColor = font->shadowColor;
+	#endif
 	float glyphscale = font->size;
 	float width = 0.f, height = font->advancey * glyphscale / 4.0f;
 	float left = x, top = y - 2.0f * height;
 	int eol = -1, n_spaces = -1, scroll = 0, textwidth;
 	float fill = 0.f;
 	float xl, xr, yu, yd, ul, ur, vu, vd;
-
-	typedef struct
-	{
-		float u, v;
-		unsigned int c;
-		float x, y, z;
-	} fontVertex;
-	fontVertex *v = NULL;
-	size_t v_last_size = 0;
+	fontVertex *v_buffer = NULL;
 	fontVertex *v0, *v1, *v2, *v3, *v4, *v5;
 	fontVertex *s0, *s1, *s2, *s3, *s4, *s5;
 
 	//count number of glyphs to draw and cache BMPs
 	int j, n_glyphs, last_n_glyphs, n_sglyphs, changed, count = 0;
 	unsigned short char_id, subucs2, glyph_id, glyph_ptr, shadowGlyph_ptr;
+
 	do
 	{
 		changed = 0;
@@ -1834,7 +1857,6 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 		for (i = 0; i < length; i++)
 		{
 			char_id = intraFontGetID(font, text[i]); //char
-			//printf("CharID: %d UCS2: %d\n", char_id, text[i]);
 			if (char_id < font->n_chars)
 			{
 				if (font->fileType == FILETYPE_PGF)
@@ -1872,7 +1894,6 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 					if (n_glyphs > last_n_glyphs)
 					{
 						/* Only add shadows if they exist */
-						//@Error: Not quite!
 						n_sglyphs+= !!font->n_shadows; //shadow
 						if (!(font->shadowGlyph[font->glyph[char_id].shadowID].flags & PGF_CACHED))
 						{
@@ -1900,18 +1921,27 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 				}
 			}
 		}
+		if(changed){
+			font->options |= INTRAFONT_DIRTY;
+			//printf("CharID: %d UCS2: %d\n", char_id, text[i]);
+		}
 		count++;
 	} while (changed && count <= length);
 	if (changed)
 		return x; //not all chars fit into texture -> abort (better solution: split up string and call intraFontPrintUCS2 twice)
 
 	//reserve memory in displaylist (switch between GU_TRIANGLES and GU_SPRITES)
-	if((VERTEX_PER_QUAD * (n_glyphs + n_sglyphs) * sizeof(fontVertex)) > v_last_size){
-		if(v){
-			free(v);
+	if((VERTEX_PER_QUAD * (n_glyphs + n_sglyphs) * sizeof(fontVertex)) > font->v_size){
+		if(font->v){
+			free(font->v);
 		}
-		v = (fontVertex*)malloc(VERTEX_PER_QUAD * (n_glyphs + n_sglyphs) * sizeof(fontVertex));
-	}
+		font->v = (struct fontVertex*)malloc(VERTEX_PER_QUAD * (n_glyphs + n_sglyphs) * sizeof(fontVertex));
+		font->v_size = VERTEX_PER_QUAD * (n_glyphs + n_sglyphs) * sizeof(fontVertex);
+		printf("%s font->v size =\t %d\n", font->filename, font->v_size);
+	} 
+	v_buffer = font->v;
+	memset(v_buffer, 0, VERTEX_PER_QUAD * (n_glyphs + n_sglyphs) * sizeof(fontVertex));
+
 
 	int s_index = 0;
 	int c_index = n_sglyphs;
@@ -2158,7 +2188,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 					vu/= font->texWidth;
 					vd/= font->texWidth;
 
-					v0 = &v[c_index * VERTEX_PER_QUAD];
+					v0 = &v_buffer[c_index * VERTEX_PER_QUAD];
 					v1 = v0 + 1;
 					v2 = v1 + 1;
 					v3 = v2 + 1;
@@ -2237,7 +2267,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 				vu/= font->texWidth;
 				vd/= font->texWidth;
 
-				s0 = &v[s_index * VERTEX_PER_QUAD];
+				s0 = &v_buffer[s_index * VERTEX_PER_QUAD];
 				s1 = s0 + 1;
 				s2 = s1 + 1;
 				s3 = s2 + 1;
@@ -2247,22 +2277,22 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 				// Up-left
 				s0->u = ul, s0->v = vu;
 				s0->c = shadowColor;
-				s0->x = xl, s0->y = yu, s0->z = -1.0f;
+				s0->x = xl, s0->y = yu, s0->z = 0;
 
 				// Up-right
 				s1->u = ur, s1->v = vu;
 				s1->c = shadowColor;
-				s1->x = xr, s1->y = yu, s1->z = -1.0f;
+				s1->x = xr, s1->y = yu, s1->z = 0;
 
 				// Down-right
 				s2->u = ur, s2->v = vd;
 				s2->c = shadowColor;
-				s2->x = xr, s2->y = yd, s2->z = -1.0f;
+				s2->x = xr, s2->y = yd, s2->z = 0;
 
 				// Down-left
 				s3->u = ul, s3->v = vd;
 				s3->c = shadowColor;
-				s3->x = xl, s3->y = yd, s3->z = -1.0f;
+				s3->x = xl, s3->y = yd, s3->z = 0;
 
 				if (font->isRotated)
 				{
@@ -2322,31 +2352,35 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 	
 	#if 0
 	printf("+Glyph----------------\n");
-	for(int i=0;i<6;i++){
-	printf("v[%d].u = %f (tex u)", i, v[i].u);
-	printf("v[%d].v = %f (tex v)", i, v[i].v);
-	printf("v[%d].c = %x (rgba8888)", i, v[i].c);
-	printf("v[%d].x = %f", i, v[i].x);
-	printf("v[%d].y = %f", i, v[i].y);
-	printf("v[%d].z = %f", i, v[i].z);
+	for(int i=0;i<(n_glyphs + n_sglyphs) * VERTEX_PER_QUAD;i++){
+	printf("v[%d].u = %0.2f (tex u) ", i, v[i].u);
+	printf("v[%d].v = %0.2f (tex v) ", i, v[i].v);
+	printf("v[%d].c = %x (rgba8888) ", i, v[i].c);
+	printf("v[%d].x = %2.2f ", i, v[i].x);
+	printf("v[%d].y = %2.2f ", i, v[i].y);
+	printf("v[%d].z = %2.2f ", i, v[i].z);
 	printf("\n");
 	}
 	#endif
 
-
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glVertexPointer(3, GL_FLOAT, sizeof(fontVertex), &v[0].x);
-	glTexCoordPointer(2, GL_FLOAT, sizeof(fontVertex), &v[0].u);
-	glColorPointer(4 , GL_UNSIGNED_BYTE, sizeof(fontVertex), &v[0].c);
+	glVertexPointer(3, GL_FLOAT, sizeof(fontVertex), &v_buffer[0].x);
+	glTexCoordPointer(2, GL_FLOAT, sizeof(fontVertex), &v_buffer[0].u);
+
+#if defined(_arch_dreamcast)
+	glColorPointer(GL_BGRA, GL_UNSIGNED_BYTE, sizeof(fontVertex), &v_buffer[0].c);
+#else
+	glColorPointer(4 , GL_UNSIGNED_BYTE, sizeof(fontVertex), &v_buffer[0].c);
+#endif
 	//glInterleavedArrays(GL_T2F_C4UB_V3F, 0, &v[0]);
 
 	glDrawArrays(GL_TRIANGLES, 0, (n_glyphs + n_sglyphs) * VERTEX_PER_QUAD);
-	
-	glDisable(GL_SCISSOR_TEST);
 	if (font->fileType == FILETYPE_BWFON) //draw chars again without shadows for improved readability
 		glDrawArrays(GL_TRIANGLES, (n_sglyphs) * VERTEX_PER_QUAD, (n_glyphs) * VERTEX_PER_QUAD);
+
+	glDisable(GL_SCISSOR_TEST);
 
 	if (scroll == 1)
 	{
