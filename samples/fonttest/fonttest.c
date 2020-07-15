@@ -13,12 +13,30 @@
 
 #include <intraFont.h>
 #include <math.h>
+#include <stdio.h>
 #include <time.h>
 
+#if defined(__WIN32) || defined(__WIN64)
 #include "../libraries/glfw_window.c"
+#define FILE_PREFIX ""
+#endif
 
+#if defined(_arch_dreamcast)
+#include "../libraries/gldc_window.c"
+#define exit(a) arch_exit()
+#define FILE_PREFIX "/cd/"
+#endif
+
+#if defined(_PSP)
+#include "../libraries/psp_window.c"
+#define exit(a) sceKernelExitGame()
+#define FILE_PREFIX "flash0:/font/"
+#endif
+
+#if !defined(_PSP)
 #define pspDebugScreenSetXY(a, b)
 #define pspDebugScreenPrintf printf
+#endif
 
 // Colors
 enum colors {
@@ -41,7 +59,7 @@ intraFont* chn;
 int i;
 
 void load(void) {
-  printf("intraFont 0.31 - 2009 by BenHur\n\nLoading fonts: 0%% ");
+  pspDebugScreenPrintf("intraFont 0.31 - 2009 by BenHur\n\nLoading fonts: 0%% ");
 
   // Init intraFont library
   intraFontInit();
@@ -50,35 +68,36 @@ void load(void) {
   char file[40];
   int i;
   for (i = 0; i < 16; i++) {
-    sprintf(file, "ltn%d.pgf", i);
+    sprintf(file, FILE_PREFIX "ltn%d.pgf", i);
     ltn[i] = intraFontLoad(file, 0);  //<- this is where the actual loading happens
     intraFontSetStyle(ltn[i], 1.0f, WHITE, DARKGRAY, 0.0f, 0);
     pspDebugScreenSetXY(15, 2);
     pspDebugScreenPrintf("%d%% ", (i + 1) * 100 / 20);
   }
 
-  jpn0 = intraFontLoad("jpn0.pgf", INTRAFONT_STRING_SJIS);  //japanese font with SJIS text string encoding
-  intraFontSetStyle(jpn0, 0.8f, WHITE, DARKGRAY, 0.0f, 0);  //scale to 80%
+  jpn0 = intraFontLoad(FILE_PREFIX "jpn0.pgf", INTRAFONT_STRING_SJIS);  //japanese font with SJIS text string encoding
+  intraFontSetStyle(jpn0, 0.8f, WHITE, DARKGRAY, 0.0f, 0);              //scale to 80%
   pspDebugScreenSetXY(15, 2);
   pspDebugScreenPrintf("%d%% ", 17 * 100 / 20);
 
-  kr0 = intraFontLoad("kr0.pgf", INTRAFONT_STRING_UTF8);   //Korean font (not available on all systems) with UTF-8 encoding
-  intraFontSetStyle(kr0, 0.8f, WHITE, DARKGRAY, 0.0f, 0);  //scale to 80%
+  kr0 = intraFontLoad(FILE_PREFIX "kr0.pgf", INTRAFONT_STRING_UTF8);  //Korean font (not available on all systems) with UTF-8 encoding
+  intraFontSetStyle(kr0, 0.8f, WHITE, DARKGRAY, 0.0f, 0);             //scale to 80%
   pspDebugScreenSetXY(15, 2);
   pspDebugScreenPrintf("%d%% ", 18 * 100 / 20);
 
-  arib = intraFontLoad("arib.pgf", 0);                      //Symbols (not available on all systems)
+  arib = intraFontLoad(FILE_PREFIX "arib.pgf", 0);          //Symbols (not available on all systems)
   intraFontSetStyle(arib, 0.8f, WHITE, DARKGRAY, 0.0f, 0);  //scale to 80%
   pspDebugScreenSetXY(15, 2);
   pspDebugScreenPrintf("%d%% ", 19 * 100 / 20);
 
-  chn = intraFontLoad("gb3s1518.bwfon", 0);                //chinese font
+  chn = intraFontLoad(FILE_PREFIX "gb3s1518.bwfon", 0);    //chinese font
   intraFontSetStyle(chn, 0.8f, WHITE, DARKGRAY, 0.0f, 0);  //scale to 80%
   pspDebugScreenSetXY(15, 2);
   pspDebugScreenPrintf("done\n");
 
   // Make sure the important fonts for this application are loaded
-  if (!ltn[0] || !ltn[4] || !ltn[8]) exit(1);
+  if (!ltn[0] || !ltn[4] || !ltn[8])
+    exit(1);
 
   // Set alternative fonts that are used in case a certain char does not exist in the main font
   intraFontSetAltFont(ltn[8], jpn0);  //japanese font is used for chars that don't exist in latin
@@ -94,6 +113,7 @@ float x_scroll1 = 80, x_scroll2 = 225, x_scroll3 = 370, x_scroll4 = 385;
 void draw(void) {
   // Draw various text
   float x, y = 20;
+
   intraFontSetStyle(ltn[4], 1.0f, BLACK, WHITE, 0.0f, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(ltn[4], 240, y, "intraFont 0.31 - 2009 by BenHur");
   intraFontSetStyle(ltn[4], 1.0f, WHITE, DARKGRAY, 0.0f, 0);
@@ -145,7 +165,7 @@ void draw(void) {
 
   intraFontSetEncoding(jpn0, INTRAFONT_STRING_SJIS);  //switch back to S-JIS
   intraFontPrint(ltn[8], 250, y, "JPN (S-JIS):");
-  x = intraFontPrint(jpn0, 350, y, "ƒCƒ“ƒgƒ‰ƒtƒHƒ“ƒg");  //S-JIS encoded text string (flag INTRAFONT_STRING_SJIS set in intraFontLoad call)
+  x = intraFontPrint(jpn0, 350, y, "ï¿½Cï¿½ï¿½ï¿½gï¿½ï¿½ï¿½tï¿½Hï¿½ï¿½ï¿½g");  //S-JIS encoded text string (flag INTRAFONT_STRING_SJIS set in intraFontLoad call)
   if (x == 350) intraFontPrint(ltn[8], 350, y, "[n/a]");
 
   y += 17;
@@ -164,7 +184,6 @@ void draw(void) {
   intraFontPrint(ltn[8], 10, y, "KOR (UTF8):");
   char utf8_kr[] = {0xed, 0x99, 0x98, 0xec, 0x98, 0x81, 0x20, 0xeb, 0x8c, 0x80, 0xed, 0x95, 0x9c, 0xeb, 0xaf, 0xbc, 0xea, 0xb5, 0xad, 0};
   x = intraFontPrint(kr0, 110, y, utf8_kr);  //print UTF-8 string (flag INTRAFONT_STRING_UTF8 set in intraFontLoad call)
-  //x = intraFontPrint(kr0, 110, y, "?? ????);  //print UTF-8 string (flag INTRAFONT_STRING_UTF8 set in intraFontLoad call)
   if (x == 110) intraFontPrint(ltn[8], 110, y, "[n/a]");
 
   intraFontPrint(ltn[8], 250, y, "MIX (UCS2):");

@@ -21,6 +21,7 @@
 #define INFO(msg) \
     fprintf(stderr, "info: %s:%d: ", __FILE__, __LINE__); \
     fprintf(stderr, "%s\n" , msg);
+#define DESKTOP 1
 #endif
 #if defined(_PSP)
 #include <pspkernel.h>
@@ -29,6 +30,7 @@
 #endif
 #if defined(_arch_dreamcast)
 #include <gl.h>
+#define DESKTOP 1
 #endif
 
 #include <stdlib.h>
@@ -44,8 +46,9 @@
 #ifndef M_PI
 #define M_PI ((float)(3.14159265358979323846))
 #endif
+#ifndef GU_PI
 #define GU_PI ((float)M_PI)
-#define DESKTOP 1
+#endif
 #define OSLIB_FREE(a)
 #endif
 

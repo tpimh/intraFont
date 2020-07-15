@@ -237,7 +237,11 @@ int cccLoadTable(const char *filename, unsigned char cp) {
     
   /* read in (compressed) table_data */
   FILE_TYPE fd = FILE_OPEN_R(filename);
+#if defined(_PSP)
     if (fd < 0) return CCC_ERROR_FILE_READ;
+#else 
+    if (!fd) return CCC_ERROR_FILE_READ;
+#endif
     unsigned int filesize = FILE_SEEK(fd, 0, SEEK_END);
     FILE_TELL(fd, filesize);
     FILE_SEEK(fd, 0, SEEK_SET);
@@ -246,7 +250,7 @@ int cccLoadTable(const char *filename, unsigned char cp) {
     FILE_CLOSE(fd);
     return CCC_ERROR_MEM_ALLOC;
   }
-    if (FILE_READ(fd, table_data, filesize) != filesize) {
+    if ((unsigned int)FILE_READ(fd, table_data, filesize) != filesize) {
     FILE_CLOSE(fd);
     free(table_data);
     return CCC_ERROR_FILE_READ;
@@ -381,7 +385,7 @@ int cccStrlenUCS2(cccUCS2 const * str) {
 }
 
 
-int cccSJIStoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
+int cccSJIStoUCS2(cccUCS2 * dst, int count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
   if (!(__table_ptr__[CCC_CP932])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP932);
@@ -418,7 +422,7 @@ int cccSJIStoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   return length;
 }
 
-int cccGBKtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
+int cccGBKtoUCS2(cccUCS2 * dst, int count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
   if (!(__table_ptr__[CCC_CP936])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP936);
@@ -452,7 +456,7 @@ int cccGBKtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   return length;
 }
 
-int cccKORtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
+int cccKORtoUCS2(cccUCS2 * dst, int count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
   if (!(__table_ptr__[CCC_CP949])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP949);
@@ -486,7 +490,7 @@ int cccKORtoUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   return length;
 }
 
-int cccBIG5toUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
+int cccBIG5toUCS2(cccUCS2 * dst, int count, cccCode const * str) {
   if (!str || !dst) return 0;
   if (!cccInitialized) cccInit();
   if (!(__table_ptr__[CCC_CP950])) cccLoadTable( FILE_PREFIX "cptbl.dat", CCC_CP950);
@@ -524,7 +528,7 @@ int cccBIG5toUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
   return length;
 }
 
-int cccUTF8toUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
+int cccUTF8toUCS2(cccUCS2 * dst, int count, cccCode const * str) {
   if (!str || !dst) return 0;
 
     int i = 0, length = 0;
@@ -545,7 +549,7 @@ int cccUTF8toUCS2(cccUCS2 * dst, size_t count, cccCode const * str) {
     return length;
 }
 
-int cccCodetoUCS2(cccUCS2 * dst, size_t count, cccCode const * str, unsigned char cp) {
+int cccCodetoUCS2(cccUCS2 * dst, int count, cccCode const * str, unsigned char cp) {
   if (!str || !dst) return 0;
 
   int length = 0;

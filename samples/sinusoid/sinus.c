@@ -14,9 +14,28 @@
 #include <intraFont.h>
 #include <math.h>
 
+#if defined(__WIN32) || defined(__WIN64)
 #include "../libraries/glfw_window.c"
+#define FILE_PREFIX ""
+#endif
 
+#if defined(_arch_dreamcast)
+#include "../libraries/gldc_window.c"
+#define FILE_PREFIX "/cd/"
+#endif
+
+#if defined(_PSP)
+#include "../libraries/psp_window.c"
+#define FILE_PREFIX "flash0:/font/"
+#endif
+
+#ifndef M_PI
+#define M_PI ((float)(3.14159265358979323846))
+#endif
+#ifndef GU_PI
 #define GU_PI ((float)M_PI)
+#endif
+
 /* ARGB */
 #define WHITE 0xFFFFFFFF
 #define GRAY 0xFF7F7F7F
@@ -43,7 +62,8 @@ Sinusoid sinus2 = (Sinusoid){0.f, 35.f, 10.f, 0.f, 0.007f, "port by mrneo240", 1
 
 void load(void) {
   intraFontInit();
-  font = intraFontLoad("ltn8.pgf", 0);
+  /* Dreamcast recommended to use INTRAFONT_CACHE_ASCII as an option but not required */
+  font = intraFontLoad(FILE_PREFIX "ltn8.pgf", 0);
   intraFontSetStyle(font, 1.f, 0, 0, 0.f, INTRAFONT_ALIGN_CENTER);
 }
 

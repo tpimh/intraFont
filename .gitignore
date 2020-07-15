@@ -12,6 +12,7 @@ build
 
 # Ignore binaries
 *.exe
+*.elf
 
 # Ignore fonts
 *.pgf
