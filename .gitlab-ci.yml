@@ -5,15 +5,32 @@ stages:
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
+build:sh4-gcc:
+  stage: build
+  image: einsteinx2/dcdev-kos-toolchain
+  script:
+    - make -f Makefile.dc clean dist samples
+  artifacts:
+    paths:
+    - libintraFont_dreamcast.tar.gz
+
+build:windows-x64-mingw:
+  stage: build
+  image: kazade/windows-sdk
+  script:
+    - mingw64-make -f Makefile.win clean dist samples
+  artifacts:
+    paths:
+    - libintraFont_x86_64-w64-mingw32.tar.gz
 
 build:psp-gcc:
   stage: build
   image: haydenkow/nu-pspdev:latest
   script:
-    - make release
+    - make -f Makefile.psp clean dist samples
   artifacts:
     paths:
-    - libintraFont.tar.gz
+    - libintraFont_psp.tar.gz
 
 publish:
   stage: publish
@@ -21,5 +38,5 @@ publish:
   only:
     - tags
   script:
-    - gitlab-release --message 'ADD TEMPLATE HERE' libintraFont.tar.gz
+    - gitlab-release --message 'ADD TEMPLATE HERE' libintraFont_x86_64-w64-mingw32.tar.gz  libintraFont_psp.tar.gz libintraFont_dreamcast.tar.gz
 
