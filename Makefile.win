@@ -1,13 +1,13 @@
 CC = x86_64-w64-mingw32-gcc
 AR = x86_64-w64-mingw32-gcc-ar
 
-CFLAGS = -Wall -I include 
+CFLAGS = -Wall -Wextra -I include
 LDFLAGS =
 
 SRC_DIR = src
 
 OBJS = src/intraFont.o src/libccc.o
-TARGET_LIB = lib/libintrafont.a
+TARGET_LIB = lib/libintrafont_win.a
 
 all: release
 
@@ -18,8 +18,8 @@ release: CFLAGS += -Os -ffast-math
 release: $(TARGET_LIB)
 
 samples:
-	make -C samples/fonttest -f Makefile.win release
-	make -C samples/sinusoid -f Makefile.win release
+	make -C samples/fonttest -f Makefile.win clean debug
+	make -C samples/sinusoid -f Makefile.win clean debug
 
 $(TARGET_LIB): $(OBJS)
 	$(AR) crus $@ $^

@@ -16,10 +16,13 @@ extern void leave(void);
 #define SQUARE_ASPECT (4.0f / 3.0f)
 
 static void error_callback(int error, const char* description) {
+  (void)error;
   fprintf(stderr, "Error: %s\n", description);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  (void)scancode;
+  (void)mods;
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
@@ -37,8 +40,8 @@ void perspectiveGL(GLdouble fovY, GLdouble aspect, GLdouble zNear, GLdouble zFar
 void RNDR_Init(void)  // We call this right after our OpenGL window is created.
 {
   glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-  glClearDepth(1.0);        // Enables Clearing Of The Depth Buffer
-  glDepthFunc(GL_LESS);     // The Type Of Depth Test To Do
+  glClearDepth(1.0);         // Enables Clearing Of The Depth Buffer
+  glDepthFunc(GL_LESS);      // The Type Of Depth Test To Do
   glDisable(GL_DEPTH_TEST);  // Enables Depth Testing
   glEnable(GL_CULL_FACE);
   glFrontFace(GL_CW);

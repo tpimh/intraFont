@@ -13,6 +13,9 @@ build
 # Ignore binaries
 *.exe
 *.elf
+*.PBP
+*.SFO
+*.prx
 
 # Ignore fonts
 *.pgf
