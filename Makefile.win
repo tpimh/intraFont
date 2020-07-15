@@ -25,7 +25,7 @@ $(TARGET_LIB): $(OBJS)
 	$(AR) crus $@ $^
 
 dist: release
-	tar -zcvf libintraFont_x86_64-w64-mingw32.tar.gz $(TARGET_LIB) include/intraFont.h include/libccc.h
+	ar -crus libintraFont_x86_64-w64-mingw32.zip $(TARGET_LIB) include/intraFont.h include/libccc.h
 
 clean:
 	-del $(SRC_DIR)\\*.o

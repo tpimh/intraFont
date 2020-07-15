@@ -22,7 +22,7 @@ samples:
 	make -C samples/sinusoid -f Makefile.psp clean EBOOT.PBP
 
 dist: release
-	tar -zcvf libintraFont_x86_64-w64-mingw32.tar.gz $(TARGET_LIB) include/intraFont.h include/libccc.h
+	tar -zcvf libintraFont_psp.tar.gz $(TARGET_LIB) include/intraFont.h include/libccc.h
 
 install: all
 	mkdir -p $(PSPDIR)/include $(PSPDIR)/lib

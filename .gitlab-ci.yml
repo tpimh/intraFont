@@ -21,7 +21,7 @@ build:windows-x64-mingw:
     - mingw64-make -f Makefile.win clean dist samples
   artifacts:
     paths:
-    - libintraFont_x86_64-w64-mingw32.tar.gz
+    - libintraFont_x86_64-w64-mingw32.zip
 
 build:psp-gcc:
   stage: build
@@ -38,5 +38,5 @@ publish:
   only:
     - tags
   script:
-    - gitlab-release --message 'ADD TEMPLATE HERE' libintraFont_x86_64-w64-mingw32.tar.gz  libintraFont_psp.tar.gz libintraFont_dreamcast.tar.gz
+    - gitlab-release --message 'ADD TEMPLATE HERE' libintraFont_x86_64-w64-mingw32.zip  libintraFont_psp.tar.gz libintraFont_dreamcast.tar.gz
 
