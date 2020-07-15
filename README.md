@@ -1,14 +1,22 @@
-# intraFont 
-## A bitmap font library for PSP using the PSP's internal font (firmware pgf and bwfon files)
+# intraFont_universal
+## A bitmap font library for PSP, Dreamcast, PC(win/lin) using the PSP's internal font (firmware pgf and bwfon files)
 
-intraFont Version 0.31 by BenHur - http://www.psp-programming.com/benhur
+__intraFont_universal Version 0.4 by mrneo240__
+
+Original intraFont library by BenHur - http://www.psp-programming.com/benhur
 
 - intraFont uses parts of pgeFont by InsertWittyName - http://insomniac.0x89.org
 - G-spec code by Geecko (2010)
 - Fixes by HaydenKow/mrneo240
+- Ports by HaydenKow/mrneo240
 
 # Latest Release
 ## [https://gitlab.com/HaydenKow/libintrafont/-/releases](https://gitlab.com/HaydenKow/libintrafont/-/releases)
+
+# Screenshots
+
+![dreamcast](/img/screen_dc?raw=true)
+![windows](/img/screen_win?raw=true)
 
 # Info
 
@@ -29,14 +37,21 @@ Known issues:
 
 # Samples
 
-There are two samples included using the graphics library from Yeldarb's tutorials 
-on psp-programming.com
-
-It should be easy enough to add to any other library.
+There are two samples included demonstrate usage but delegate platform specific code into seperate files.
 
 # Dependencies
 
+All:
 - libccc (included in the package)
+
+Dreamcast:
+
+- GLdc (included, or provide your own)
+
+Desktop (win/lin):
+
+- glfw3 (windows included, linux use system)
+- galogen (included)
 
 # Performance
 
@@ -75,7 +90,7 @@ The following table shows typical performance numbers:
 - StrmnNrmn: bug fixes and optimizations
 - Slasher and xart: bug reports
 - Tong: unicode mapping of gb3s1518.bwfon
-- HaydenKow/mrneo240: fixes and updates
+- HaydenKow/mrneo240: fixes and updates and ports
 
 # License
 
