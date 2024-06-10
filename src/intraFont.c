@@ -13,11 +13,13 @@
  *
  */
 
-#if defined(__WIN32) || defined(__WIN64)
+#if defined(__WIN32) || defined(__WIN64) || defined(__linux__)
+#if !defined(__linux__)
 #include <windows.h>
 #include <GLFW/galo.h>
-#include <GLFW/glfw3.h>
 #define memalign(a, b) malloc(b)
+#endif
+#include <GLFW/glfw3.h>
 #define INFO(msg) \
     fprintf(stderr, "info: %s:%d: ", __FILE__, __LINE__); \
     fprintf(stderr, "%s\n" , msg);

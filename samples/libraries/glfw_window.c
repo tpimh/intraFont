@@ -1,9 +1,16 @@
-﻿#include <windows.h>
+#if !defined(__linux__)
+#include <windows.h>
+#endif
+
 #if defined(__MINGW32__) || defined(__linux__)
+#if !defined(__linux__)
 #include <GLFW/galo.h>
+#endif
 #include <GLFW/glfw3.h>
 
+#if !defined(__linux__)
 #include "galo.c"
+#endif
 #endif
 
 #include <stdio.h>

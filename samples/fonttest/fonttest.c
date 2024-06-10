@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#if defined(__WIN32) || defined(__WIN64)
+#if defined(__WIN32) || defined(__WIN64) || defined(__linux__)
 #include "../libraries/glfw_window.c"
 #define FILE_PREFIX ""
 #endif

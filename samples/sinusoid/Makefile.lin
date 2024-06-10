@@ -1,0 +1,25 @@
+CC = gcc
+
+TARGET = sinus
+OBJS = sinus.o
+
+INCDIR = ../../include
+CFLAGS = -Wall -Wextra -I$(INCDIR)
+
+LIBDIR = ../../lib
+LDFLAGS = -L$(LIBDIR)
+LIBS = -lintrafont_lin -lglfw -lGL -lm
+
+all: release
+
+debug: CFLAGS += -O0 -g
+debug: $(TARGET)
+
+release: CFLAGS += -Os -s
+release: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+clean:
+	-rm -f $(OBJS) $(TARGET)

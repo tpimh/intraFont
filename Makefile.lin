@@ -1,0 +1,33 @@
+CC = gcc
+AR = gcc-ar
+
+CFLAGS = -Wall -Wextra -I include
+LDFLAGS =
+
+SRC_DIR = src
+
+OBJS = src/intraFont.o src/libccc.o
+TARGET_LIB = lib/libintrafont_lin.a
+
+all: release
+
+debug: CFLAGS += -O0 -g -DDEBUG
+debug: $(TARGET_LIB)
+
+release: CFLAGS += -Os -ffast-math
+release: $(TARGET_LIB)
+
+samples:
+	make -C samples/fonttest -f Makefile.lin clean debug
+	make -C samples/sinusoid -f Makefile.lin clean debug
+
+$(TARGET_LIB): $(OBJS)
+	$(AR) rcs $@ $^
+
+dist: release
+	ar -crus libintraFont_linux.zip $(TARGET_LIB) include/intraFont.h include/libccc.h
+
+clean:
+	-rm -f $(OBJS) $(TARGET_LIB)
+
+.PHONY: release debug clean dist samples
