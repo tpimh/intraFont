@@ -18,6 +18,7 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 #include "libccc.h"
 
 /** @defgroup intraFont Font Library
@@ -85,23 +86,23 @@ extern "C" {
  *
  * @note This is used internally by ::intraFont and has no other relevance.
  */
-typedef struct {
-  unsigned short x;         //in pixels
-  unsigned short y;         //in pixels
-  unsigned char width;      //in pixels
-  unsigned char height;     //in pixels
-  char left;                //in pixels
-  char top;                 //in pixels
-  unsigned char flags;
-  unsigned short shadowID;  //to look up in shadowmap
-  char advance;             //in quarterpixels
-  unsigned long ptr;        //offset 
+  typedef struct {
+    uint16_t x;     // in pixels
+    uint16_t y;     // in pixels
+    uint8_t width;  // in pixels
+    uint8_t height; // in pixels
+    int8_t left;    // in pixels
+    int8_t top;     // in pixels
+    uint8_t flags;
+    uint16_t shadowID; // to look up in shadowmap
+    int8_t advance;    // in quarterpixels
+    uint32_t ptr;      // offset
 } Glyph;
 
-typedef struct {
-  unsigned short x;         //in pixels
-  unsigned short y;         //in pixels
-  unsigned char flags;
+  typedef struct {
+    uint16_t x; // in pixels
+    uint16_t y; // in pixels
+    uint8_t flags;
 } GlyphBW;
 
 /**
@@ -109,34 +110,34 @@ typedef struct {
  *
  * @note This is used internally by ::intraFont and has no other relevance.
  */
-typedef struct {
-  unsigned short header_start;
-  unsigned short header_len;
-  char pgf_id[4];
-  unsigned long revision;
-  unsigned long version;
-  unsigned long charmap_len;
-  unsigned long charptr_len;
-  unsigned long charmap_bpe;
-  unsigned long charptr_bpe;
-  unsigned char junk00[21];
-  unsigned char family[64];
-  unsigned char style[64];
-  unsigned char junk01[1];
-  unsigned short charmap_min;
-  unsigned short charmap_max;
-  unsigned char junk02[50];
-  unsigned long fixedsize[2];
-  unsigned char junk03[14];
-  unsigned char table1_len;
-  unsigned char table2_len;
-  unsigned char table3_len;
-  unsigned char advance_len;
-  unsigned char junk04[102];
-  unsigned long shadowmap_len;
-  unsigned long shadowmap_bpe;
-  unsigned char junk05[4];
-  unsigned long shadowscale[2];
+  typedef struct {
+    uint16_t header_start;
+    uint16_t header_len;
+    uint8_t pgf_id[4];
+    uint32_t revision;
+    uint32_t version;
+    uint32_t charmap_len;
+    uint32_t charptr_len;
+    uint32_t charmap_bpe;
+    uint32_t charptr_bpe;
+    uint8_t junk00[21];
+    uint8_t family[64];
+    uint8_t style[64];
+    uint8_t junk01[1];
+    uint16_t charmap_min;
+    uint16_t charmap_max;
+    uint8_t junk02[50];
+    uint32_t fixedsize[2];
+    uint8_t junk03[14];
+    uint8_t table1_len;
+    uint8_t table2_len;
+    uint8_t table3_len;
+    uint8_t advance_len;
+    uint8_t junk04[102];
+    uint32_t shadowmap_len;
+    uint32_t shadowmap_bpe;
+    uint8_t junk05[4];
+    uint32_t shadowscale[2];
   //currently no need ;
 } PGF_Header;
 

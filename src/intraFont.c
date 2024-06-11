@@ -67,7 +67,7 @@ unsigned long intraFontGetV(unsigned long n, unsigned char *p, unsigned long *b)
 	return v;
 }
 
-unsigned long *intraFontGetTable(FILE *file, unsigned long n_elements, unsigned long bp_element)
+uint32_t *intraFontGetTable(FILE *file, uint32_t n_elements, uint32_t bp_element)
 {
 	unsigned long len_table = ((n_elements * bp_element + 31) / 32) * 4;
 	unsigned char *raw_table = (unsigned char *)malloc(len_table * sizeof(unsigned char));
@@ -78,7 +78,7 @@ unsigned long *intraFontGetTable(FILE *file, unsigned long n_elements, unsigned 
 		free(raw_table);
 		return NULL;
 	}
-	unsigned long *table = (unsigned long *)malloc(n_elements * sizeof(unsigned long));
+	uint32_t *table = (uint32_t *)malloc(n_elements * sizeof(uint32_t));
 	if (table == NULL)
 	{
 		free(raw_table);
@@ -344,7 +344,7 @@ int intraFontGetBMP(intraFont *font, unsigned short id, unsigned char glyphtype)
 	return 1; //texture has changed
 }
 
-int intraFontGetGlyph(unsigned char *data, unsigned long *b, unsigned char glyphtype, signed long *advancemap, Glyph *glyph)
+int intraFontGetGlyph(unsigned char *data, unsigned long *b, unsigned char glyphtype, int32_t *advancemap, Glyph *glyph)
 {
 	if (glyphtype & PGF_CHARGLYPH)
 	{
@@ -705,7 +705,7 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 
 		//read advance table
 		fseek(file, header.header_len + (header.table1_len + header.table2_len + header.table3_len) * 8, SEEK_SET);
-		signed long *advancemap = (signed long *)malloc(header.advance_len * sizeof(signed long) * 2);
+		int32_t *advancemap = (int32_t *)malloc(header.advance_len * sizeof(int32_t) * 2);
 		if (!advancemap)
 		{
 			fclose(file);
@@ -713,7 +713,7 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 			intraFontUnload(font);
 			return NULL;
 		}
-		if (fread(advancemap, header.advance_len * sizeof(signed long) * 2, 1, file) != 1)
+		if (fread(advancemap, header.advance_len * sizeof(int32_t) * 2, 1, file) != 1)
 		{
 			free(advancemap);
 			fclose(file);
@@ -721,8 +721,7 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 			return NULL;
 		}
 
-		//read shadowmap
-		unsigned long *ucs_shadowmap = intraFontGetTable(file, header.shadowmap_len, header.shadowmap_bpe);
+		uint32_t *ucs_shadowmap = intraFontGetTable(file, header.shadowmap_len, header.shadowmap_bpe);
 		if (ucs_shadowmap == NULL && (header.shadowmap_len != 0))
 		{
 			/* change logic here to allow zero shadow fonts */
@@ -767,7 +766,7 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 		}
 		else
 		{
-			unsigned long *id_charmap = intraFontGetTable(file, header.charmap_len, header.charmap_bpe);
+			uint32_t *id_charmap = intraFontGetTable(file, header.charmap_len, header.charmap_bpe);
 			if (id_charmap == NULL)
 			{
 				free(advancemap);
@@ -786,7 +785,7 @@ intraFont *intraFontLoad(const char *filename, unsigned int options)
 		}
 
 		//read charptr
-		unsigned long *charptr = intraFontGetTable(file, header.charptr_len, header.charptr_bpe);
+		uint32_t *charptr = intraFontGetTable(file, header.charptr_len, header.charptr_bpe);
 		if (charptr == NULL)
 		{
 			free(advancemap);
