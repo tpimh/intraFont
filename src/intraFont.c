@@ -16,10 +16,8 @@
 #if defined(__WIN32) || defined(__WIN64) || defined(__linux__)
 #if !defined(__linux__)
 #include <windows.h>
-#include <GLFW/galo.h>
 #define memalign(a, b) malloc(b)
 #endif
-#include <GLFW/glfw3.h>
 #define INFO(msg) \
     fprintf(stderr, "info: %s:%d: ", __FILE__, __LINE__); \
     fprintf(stderr, "%s\n" , msg);
@@ -1024,8 +1022,14 @@ void intraFontShutdown(void)
 	//Nothing yet
 }
 
-#ifdef PSP
-static inline void intraFontActivate_PSP(intraFont *font){
+void intraFontActivate(intraFont *font)
+{
+	if (!font)
+		return;
+	if (!font->texture)
+		return;
+
+#if defined(_PSP)
 	sceGuClutMode(GU_PSM_8888, 0, 255, 0);
 	sceGuClutLoad(2, clut);
 
@@ -1037,50 +1041,6 @@ static inline void intraFontActivate_PSP(intraFont *font){
 	sceGuTexOffset(0.0f, 0.0f);
 	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 	sceGuTexFilter(GU_LINEAR, GU_LINEAR);
-}
-#endif
-
-#ifdef DESKTOP
-/*@Note: Maybe check to see if we need to upload every frame or just once? */
-static inline void intraFontActivate_PC(intraFont *font){
-	if(font->textureID == 0)
-		glGenTextures(1, &font->textureID);
-
-	glEnable(GL_TEXTURE_2D);
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-	glBindTexture(GL_TEXTURE_2D, font->textureID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	/* Upload if needed */
-	if(font->options & INTRAFONT_DIRTY){
-#if defined(_arch_dreamcast)
-		glTexImage2D(GL_TEXTURE_2D,	0, 4, font->texWidth, font->texWidth,	0, GL_RGBA, GL_UNSIGNED_BYTE, font->texture);
-#else
-		glTexImage2D(GL_TEXTURE_2D,	0, GL_RGBA8, font->texWidth, font->texWidth,0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, font->texture);
-#endif
-		printf("Texture uploaded!\n");
-		font->options &= ~INTRAFONT_DIRTY;
-	}
-}	
-#endif
-
-void intraFontActivate(intraFont *font)
-{
-	if (!font)
-		return;
-	if (!font->texture)
-		return;
-
-#if defined(_PSP)
-	intraFontActivate_PSP(font);
-#else
-	intraFontActivate_PC(font);
 #endif
 }
 
@@ -1979,7 +1939,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 						case INTRAFONT_SCROLL_LEFT:							   //scroll left
 							/*@Note: scGuScissor was here, this is incorrect */
-							glScissor(left - 2, 0, left + column + 4, 480); //limit to column width
+							//glScissor(left - 2, 0, left + column + 4, 480); //limit to column width
 							if (count < 60)
 							{
 								//show initial text for 1s
@@ -2001,7 +1961,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 						case INTRAFONT_SCROLL_SEESAW:											//scroll left and right
 							/*@Note: scGuScissor was here, this is incorrect */
-							glScissor(left - column / 2 - 2, 0, left + column / 2 + 4, 272); //limit to column width
+							//glScissor(left - column / 2 - 2, 0, left + column / 2 + 4, 272); //limit to column width
 							textwidth -= column;
 							if (count < 60)
 							{
@@ -2028,7 +1988,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 						case INTRAFONT_SCROLL_RIGHT:						   //scroll right
 							/*@Note: scGuScissor was here, this is incorrect */
-							glScissor(left - column - 2, 0, left + 4, 272); //limit to column width
+							//glScissor(left - column - 2, 0, left + 4, 272); //limit to column width
 							if (count < 60)
 							{
 								left -= textwidth; //show initial text for 1s
@@ -2052,7 +2012,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 
 						case INTRAFONT_SCROLL_THROUGH:						   //scroll through
 							/*@Note: scGuScissor was here, this is incorrect */
-							glScissor(left - 2, 0, left + column + 4, 272); //limit to column width
+							//glScissor(left - 2, 0, left + column + 4, 272); //limit to column width
 							if (count < (textwidth + column + 30))
 							{
 								left += column + 4 - count; //scroll through
@@ -2067,7 +2027,7 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 						ux.i++;   //increase counter
 						x = ux.f; //copy back to original var
 						/*@Note: sceGuEnable was here  for scissor */
-						glEnable(GL_SCISSOR_TEST);
+						//glEnable(GL_SCISSOR_TEST);
 					}
 				}
 				else
@@ -2366,25 +2326,6 @@ float intraFontPrintColumnUCS2Ex(intraFont *font, float x, float y, float column
 	printf("\n");
 	}
 	#endif
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	glVertexPointer(3, GL_FLOAT, sizeof(fontVertex), &v_buffer[0].x);
-	glTexCoordPointer(2, GL_FLOAT, sizeof(fontVertex), &v_buffer[0].u);
-
-#if defined(_arch_dreamcast)
-	glColorPointer(GL_BGRA, GL_UNSIGNED_BYTE, sizeof(fontVertex), &v_buffer[0].c);
-#else
-	glColorPointer(4 , GL_UNSIGNED_BYTE, sizeof(fontVertex), &v_buffer[0].c);
-#endif
-	//glInterleavedArrays(GL_T2F_C4UB_V3F, 0, &v[0]);
-
-	glDrawArrays(GL_TRIANGLES, 0, (n_glyphs + n_sglyphs) * VERTEX_PER_QUAD);
-	if (font->fileType == FILETYPE_BWFON) //draw chars again without shadows for improved readability
-		glDrawArrays(GL_TRIANGLES, (n_sglyphs) * VERTEX_PER_QUAD, (n_glyphs) * VERTEX_PER_QUAD);
-
-	glDisable(GL_SCISSOR_TEST);
 
 	if (scroll == 1)
 	{
